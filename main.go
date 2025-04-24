@@ -1,118 +1,158 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
 	router := gin.Default()
-    
-    // DATA USERS
+
+	// setting file env yang berisi informasi db
+    dbEnv := []any{}
+	dbEnv = append(dbEnv, os.Getenv("DBUSER"))
+	dbEnv = append(dbEnv, os.Getenv("DBPASS"))
+	dbEnv = append(dbEnv, os.Getenv("DBHOST"))
+	dbEnv = append(dbEnv, os.Getenv("DBPORT"))
+	dbEnv = append(dbEnv, os.Getenv("DBNAME"))
+
+	// setup database connection
+	dbString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", dbEnv...)
+
+	dbClient, err := pgxpool.New(context.Background(), dbString)
+
+	log.Println("[debug]", dbString)
+
+	if err != nil {
+		log.Printf("unable to create connection pool:  %v\n", err)
+		os.Exit(1)
+	}
+
+	// closing DB
+	defer func()  {
+		log.Println("Closing DB...")
+		dbClient.Close()	
+	}()
+
+    // DATA USER
     type usersStruct struct {
-        Id int `json:"id" form:"id"`
-        Email string `json:"email" form:"email"`
-        Password string `json:"password" form:"password"`
-        Role string `json:"role" form:"role"`
+        Id int `db:"id" json:"id.omitempty"`
+        Email string `db:"email" json:"email" form:"email"`
+        Password string `db:"password" json:"password" form:"password"`
     }
 
-    users := []usersStruct{
-        {Id: 1, Email: "pradana@gmail.com", Password: "pradana123", Role: "user"},
-        {Id: 2, Email: "jhon@gmail.com", Password: "jhon123", Role: "user"},
-        {Id: 3, Email: "dhani@gmail.com", Password: "dhani123", Role: "user"},
-    }
+    // add user
+    router.POST("/add-users", func(ctx *gin.Context) {
+        newUser := usersStruct{}
 
-    router.GET("/users", func(ctx *gin.Context) {
-        emailQ := ctx.Query("Email")
-        passQ := ctx.Query("Password")
+        if err := ctx.ShouldBindJSON(&newUser); err != nil {
+			log.Println("Binding error:", err)
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"msg": "invalid data sent",
+			})
+			return
+		}
 
-        // jika tidak terdapat query apapun
-        if emailQ == "" && passQ == "" {
-            ctx.JSON(http.StatusOK, gin.H{
-                "msg": "success",
-                "data": users,
-            })
-            return
-        }
+        query := "INSERT INTO users (email, password) VALUES ($1, $2)"
+		values := []any{newUser.Email, newUser.Password}
+		cmd, err := dbClient.Exec(ctx.Request.Context(), query, values...)
+        if err != nil {
+			log.Println(err.Error())
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"msg": "Terjadi kesalahan server",
+			})
+			return
+		}
 
-        // mencari user dan password
-        result := []usersStruct{}
-        errPass := ""
-        for _, user := range users {
-            emailCond := strings.EqualFold(user.Email, emailQ)
-            passCond := strings.EqualFold(user.Password, passQ)
+		if cmd.RowsAffected() == 0 {
+			log.Println("Query gagal, tidak merubah data di DB")
+		}
 
-            if emailCond && passCond {
-                result = append(result, user)
-            }
-
-            if emailCond && !passCond {
-                errPass = "incorrect password"
-            }
-        }
-
-        // jika password salah
-        if errPass != "" {
-            ctx.JSON(http.StatusNotFound, gin.H{
-                "msg": "incorrect password",
-            })
-            return
-        }
-
-        // jika user tidak ditemukan
-        if len(result) == 0 {
-            ctx.JSON(http.StatusNotFound, gin.H{
-                "msg": "user not found",
-            })
-            return
-        }
-
-        // jika user ditemukan
-        ctx.JSON(http.StatusOK, gin.H{
-            "msg": "success",
-            "data": result,
-        })
+		ctx.JSON(http.StatusOK, gin.H{
+			"msg": "success",
+		})
     })
 
-    // menambahkan user baru
-    router.POST("users", func(ctx *gin.Context) {
-        newUser := &usersStruct{}
+    // auth user login
+    router.POST("/user-login", func(ctx *gin.Context) {
+        auth := usersStruct{}
 
-        if err := ctx.ShouldBind(newUser); err != nil {
-            ctx.JSON(http.StatusInternalServerError, gin.H{
-                "msg": "an error occurred on the server",
+		if err := ctx.ShouldBindJSON(&auth); err != nil {
+			log.Println("Binding error:", err)
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"msg": "Data yang dikirim tidak valid",
+			})
+			return
+		}
+
+        // mengambil data user dari DB
+        query := "SELECT email, password FROM users"
+        values := []any{auth.Email, auth.Password}
+
+        rows, err := dbClient.Query(context.Background(), query)
+		if err != nil {
+			log.Println(err.Error())
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"msg": "terjadi kesalahan sistem",
+			})
+			return
+		}
+
+		defer rows.Close()
+		var result []usersStruct
+		for rows.Next() {
+			var users usersStruct
+			if err := rows.Scan(&users.Email, &users.Password); err != nil {
+				log.Println(err.Error())
+				ctx.JSON(http.StatusInternalServerError, gin.H{
+					"msg": "terjadi kesalahan sistem",
+				})
+				return
+			}
+			result = append(result, users)
+		}
+
+        // mengecek apakan email dan password sesuai
+        var userLogin []usersStruct
+        for _, user := range result {
+            if user.Email == values[0] && user.Password == values[1] {
+                userLogin = append(userLogin, user)
+            }
+        }
+
+        // error handling jika email atau password tidak sesuai
+        if len(userLogin) == 0 {
+            ctx.JSON(http.StatusNotFound, gin.H{
+                "msg": "incorrect email or password",
             })
             return
         }
 
-        newUsers := append(users, *newUser)
+        // jika user berhasil login
         ctx.JSON(http.StatusOK, gin.H{
-            "msg": "success",
-            "data": newUsers,
+            "msg": "login user success",
         })
     })
 
     // DATA PROFILE
     type profileStruct struct {
-        UserId int `json:"userId" form:"userId"`
-        FirstName string `json:"firstName" form:"firstName"`
-        LastName string `json:"lastName" form:"lastName"`
-        PhoneNumber string `json:"phoneNumber" form:"phoneNumber"`
-        PhotoPath string `json:"photoPath" form:"photoPath"`
-        Title string `json:"title" form:"title"`
-        Point int `json:"point" form:"point"`
+        UserId int `db:"userId" json:"userId" form:"userId.omitempty"`
+        FirstName string `db:"firstName" json:"firstName" form:"firstName"`
+        LastName string `db:"lastName" json:"lastName" form:"lastName"`
+        PhoneNumber string `db:"phoneNumber" json:"phoneNumber" form:"phoneNumber"`
+        PhotoPath string `db:"photoPath" json:"photoPath" form:"photoPath"`
+        Title string `db:"title" json:"title" form:"title"`
+        Point int `db:"point" json:"point" form:"point.omitempty"`
     }
 
-    profiles := []profileStruct{
-        {UserId: 1, FirstName: "Rizki", LastName: "Pradana", PhoneNumber: "087768012234", PhotoPath: "/images/photo/pradana.png", Title: "Director of Finance", Point: 0},
-        {UserId: 2, FirstName: "Doni", LastName: "Rahmawan", PhoneNumber: "087768010011", PhotoPath: "/images/photo/rahmawan.png", Title: "Teacher", Point: 0},
-        {UserId: 3, FirstName: "Tony", LastName: "Sugiharto", PhoneNumber: "087768018822", PhotoPath: "/images/photo/sugiharto.png", Title: "Director", Point: 0},
-        {UserId: 4, FirstName: "Tony", LastName: "Sugiharto", PhoneNumber: "087768018822", PhotoPath: "/images/photo/sugiharto.png", Title: "Director", Point: 0},
-        {UserId: 5, FirstName: "Fany", LastName: "Rahmawati", PhoneNumber: "087768012221", PhotoPath: "/images/photo/rahmawati.png", Title: "Teller Bank", Point: 0},
-    }
 
     router.GET("/profiles/:id", func(ctx *gin.Context) {
         idStr, ok := ctx.Params.Get("id")
@@ -134,32 +174,20 @@ func main() {
             return
         }
 
-        var profile []profileStruct
-        for _, p := range profiles {
-            if p.UserId == idInt {
-                profile = append(profile, p)
-                break
-            }
-        } 
-
-        if len(profile) == 0 {
-            ctx.JSON(http.StatusBadRequest, gin.H{
-                "msg": "profile not found",
-            })
-            return
-        }
+        query := "SELECT phone_number, first_name, last_name, photo_path, title, point FROM profile WHERE user_id = $1"
+        values := []any{idInt}
+        var result profileStruct
+		if err := dbClient.QueryRow(context.Background(), query, values...).Scan(&result.PhoneNumber, &result.FirstName, &result.LastName, &result.PhotoPath, &result.Title, &result.Point); err != nil {
+			log.Println(err.Error())
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"msg": "terjadi kesalahan sistem",
+			})
+			return
+		}
 
         ctx.JSON(http.StatusOK, gin.H{
             "msg": "success",
-            "data": profile[0],
-        })
-
-    })
-
-    router.GET("/profiles", func(ctx *gin.Context) {
-        ctx.JSON(http.StatusOK, gin.H{
-            "msg": "success",
-            "data": profiles,
+            "data": result,
         })
     })
 
@@ -378,16 +406,32 @@ func main() {
 
     router.GET("/movies", func(ctx *gin.Context) {
 
-        if len(movies) == 0 {
+		if len(movies) == 0 {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"msg": "movie not found",
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"msg":  "success",
+			"data": movies,
+		})
+	})
+
+    router.POST("movies", func(ctx *gin.Context) {
+        newMovie := &moviesStruct{}
+        if err := ctx.ShouldBind(newMovie); err != nil {
             ctx.JSON(http.StatusInternalServerError, gin.H{
-                "msg": "movie not found",
+                "msg": "terjadi kesalahan sisten",
             })
             return
         }
 
+        newMovies := append(movies, *newMovie)
         ctx.JSON(http.StatusOK, gin.H{
             "msg": "success",
-            "data": movies,
+            "data": newMovies,
         })
     })
 
