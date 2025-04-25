@@ -19,7 +19,7 @@ func NewMovieshandler(moviesRepo *repositories.MoviesRepository) *Movieshandler 
 
 // Get all movies
 func (m *Movieshandler) GetMovies(ctx *gin.Context) {
-	result, err := m.moviesRepo.GetMovies(ctx)
+	result, err := m.moviesRepo.GetMovies(ctx.Request.Context())
 
 	if err != nil {
 		log.Println("[ERROR]", err.Error())
@@ -54,7 +54,7 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 		return
 	}
 
-	cmd, err := m.moviesRepo.AddMovie(ctx, newDataMovie)
+	cmd, err := m.moviesRepo.AddMovie(ctx.Request.Context(), newDataMovie)
 
 	if err != nil {
 		log.Println("Insert profile error:", err)

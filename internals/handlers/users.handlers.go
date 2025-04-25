@@ -30,7 +30,7 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 		return
 	}
 
-	cmd, err := u.usersRepo.UserRegister(ctx, newDataUser)
+	cmd, err := u.usersRepo.UserRegister(ctx.Request.Context(), newDataUser)
 
 	if err != nil {
 		log.Println("Insert profile error:", err)
@@ -60,7 +60,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 
 	value := []any{auth.Email, auth.Password}
 
-	result, err := u.usersRepo.UserLogin(ctx, auth)
+	result, err := u.usersRepo.UserLogin(ctx.Request.Context(), auth)
 
 	if err != nil {
 		log.Println("Insert profile error:", err)
@@ -108,7 +108,7 @@ func (u *UsersHandler) GetProfileById(ctx *gin.Context) {
 		return
 	}
 
-	result, err := u.usersRepo.GetProfileById(ctx, idInt)
+	result, err := u.usersRepo.GetProfileById(ctx.Request.Context(), idInt)
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -155,7 +155,7 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	cmd, err := u.usersRepo.UpdateProfile(ctx, updateProfile, idInt)
+	cmd, err := u.usersRepo.UpdateProfile(ctx.Request.Context(), updateProfile, idInt)
 
 	if err != nil {
 		log.Println("Insert profile error:", err)
