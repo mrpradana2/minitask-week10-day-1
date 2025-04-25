@@ -3,6 +3,7 @@ package handlers
 import (
 	"log"
 	"net/http"
+	"strconv"
 	"tikcitz-app/internals/models"
 	"tikcitz-app/internals/repositories"
 
@@ -67,5 +68,53 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"msg": "success",
+	})
+}
+
+// Handler update movie
+func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
+	var updateMovie models.MoviesStruct
+
+	// binding data
+	if err := ctx.ShouldBindJSON(&updateMovie); err != nil {
+		log.Println("Binding error:", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"msg": "invalid data sent",
+		})
+		return
+	}
+
+	idStr, ok := ctx.Params.Get("id")
+
+	// handling error jika param tidak ada
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"msg": "Param id is needed",
+		})
+		return
+	}
+
+	idInt, err := strconv.Atoi(idStr)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "an error occurred on the server",
+		})
+		return
+	}
+
+	cmd, err := m.moviesRepo.UpdateMovie(ctx.Request.Context(), &updateMovie, idInt)
+	if err != nil {
+		log.Println("Insert profile error:", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occurred on the server"})
+		return
+	}
+
+	if cmd.RowsAffected() == 0 {
+		log.Println("Query failed, could not change the data in the database")
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"msg": "data successfully changed",
 	})
 }

@@ -50,10 +50,15 @@ func (u *MoviesRepository) AddMovie(ctx context.Context, newDataMovie models.Mov
 }
 
 // repository update movie
-// func (u *MoviesRepository) UpdateMovie(ctx *gin.Context, updateMovie *models.MoviesStruct, idInt int) {
-// 	query := "UPDATE movies SET title = $1, image_path = $2, overview = $3, release_date = $4, director_name = $5, duration = $6, casts = $7, status_movie_id = $8 where id = $9"
+func (u *MoviesRepository) UpdateMovie(ctx context.Context, updateMovie *models.MoviesStruct, idInt int) (pgconn.CommandTag, error) {
+	query := "UPDATE movies SET title = $1, image_path = $2, overview = $3, release_date = $4, director_name = $5, duration = $6, casts = $7, status_movie_id = $8 WHERE id = $9"
 
-// 	values := []any{updateMovie.Title, updateMovie.Image_path, updateMovie.Overview, updateMovie.Release_date, updateMovie.Director_name, updateMovie.Duration, updateMovie.Casts, updateMovie.Status_movie_id, updateMovie.Id}
+	values := []any{updateMovie.Title, updateMovie.Image_path, updateMovie.Overview, updateMovie.Release_date, updateMovie.Director_name, updateMovie.Duration, updateMovie.Casts, updateMovie.Status_movie_id, idInt}
 
-// 	u.db.Exec(ctx.Request.Context(),  )
-// }
+	cmd, err := u.db.Exec(ctx, query, values...)
+	if err != nil {
+		return pgconn.CommandTag{}, err
+	}
+
+	return cmd, nil
+}

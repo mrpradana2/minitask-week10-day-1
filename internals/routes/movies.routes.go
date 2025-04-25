@@ -8,13 +8,15 @@ import (
 )
 
 func InitRouterMovies(router *gin.Engine, moviesRepo *repositories.MoviesRepository) {
-	// DATA MOVIES
 	routerMovies := router.Group("/movies")
 	moviesHandler := handlers.NewMovieshandler(moviesRepo)
 	
-	// get all movie
+	// Router get all movie
 	routerMovies.GET("", moviesHandler.GetMovies)
 
-	// add movie
+	// Router add movie
 	routerMovies.POST("/add", moviesHandler.AddMovie)
+
+	// Router update movie
+	routerMovies.PUT("/edit/:id", moviesHandler.UpdateMovie)
 }

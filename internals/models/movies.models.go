@@ -3,7 +3,6 @@ package models
 import "time"
 
 type MoviesStruct struct {
-	Id              int       `json:"id" form:"id,omitempty"`
 	Title           string    `json:"title" form:"title"`
 	Image_path      string    `json:"image_path" form:"image_path"`
 	Overview        string    `json:"overview" form:"overview"`
