@@ -158,3 +158,23 @@ func (m *Movieshandler) DeleteMovie(ctx *gin.Context) {
 	})
 }
 
+// handler get movie upcoming
+func (m *Movieshandler) GetMoviesUpcoming(ctx *gin.Context) {
+	result, err := m.moviesRepo.GetMovieUpcoming(ctx.Request.Context())
+	if err != nil {
+		log.Println("Get Movie error:", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occurred on the server"})
+		return
+	}
+
+	if len(result) < 1 {
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"msg": "movie not found",
+		})
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"msg": "success",
+		"data": result,
+	})
+}

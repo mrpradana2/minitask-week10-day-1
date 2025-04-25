@@ -75,3 +75,24 @@ func (u *MoviesRepository) DeleteMovie(ctx context.Context, idInt int) (pgconn.C
 
 	return cmd, nil
 }
+
+// repository get upcoming movie
+func (u *MoviesRepository) GetMovieUpcoming(ctx context.Context) ([]models.MoviesStruct, error) {
+	query := "SELECT m.title, sm.status, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts FROM movies m JOIN status_movie sm ON m.status_movie_id = sm.id WHERE status_movie_id = 1"
+
+	rows, err := u.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+	var result []models.MoviesStruct
+	for rows.Next() {
+		var movies models.MoviesStruct
+		if err := rows.Scan(&movies.Title, &movies.Status_movie, &movies.Release_date, &movies.Overview, &movies.Image_path, &movies.Duration, &movies.Director_name, &movies.Casts); err != nil {
+			return nil, err
+		}
+		result = append(result, movies)
+	}
+	return result, nil
+}

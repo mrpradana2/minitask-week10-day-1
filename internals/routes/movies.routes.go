@@ -22,4 +22,7 @@ func InitRouterMovies(router *gin.Engine, moviesRepo *repositories.MoviesReposit
 
 	// Router delete movie
 	routerMovies.DELETE("/delete/:id", moviesHandler.DeleteMovie)
+
+	// router get movie upcoming
+	routerMovies.GET("/moviesupcoming", moviesHandler.GetMoviesUpcoming)
 }
