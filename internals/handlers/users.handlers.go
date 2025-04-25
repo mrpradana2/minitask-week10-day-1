@@ -10,10 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type UsersHandler struct{}
+type UsersHandler struct{
+	usersRepo *repositories.UserRepository
+}
 
-func NewUsersHandlers() *UsersHandler {
-	return &UsersHandler{}
+func NewUsersHandlers(usersRepo *repositories.UserRepository) *UsersHandler {
+	return &UsersHandler{usersRepo: usersRepo}
 }
 
 // add user
@@ -28,7 +30,7 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 		return
 	}
 
-	cmd, err := repositories.UserRepo.UserRegister(ctx, newDataUser)
+	cmd, err := u.usersRepo.UserRegister(ctx, newDataUser)
 
 	if err != nil {
 		log.Println("Insert profile error:", err)
@@ -58,7 +60,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 
 	value := []any{auth.Email, auth.Password}
 
-	result, err := repositories.UserRepo.UserLogin(ctx, auth)
+	result, err := u.usersRepo.UserLogin(ctx, auth)
 
 	if err != nil {
 		log.Println("Insert profile error:", err)
@@ -106,7 +108,7 @@ func (u *UsersHandler) GetProfileById(ctx *gin.Context) {
 		return
 	}
 
-	result, err := repositories.UserRepo.GetProfileById(ctx, idInt)
+	result, err := u.usersRepo.GetProfileById(ctx, idInt)
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -153,7 +155,7 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	cmd, err := repositories.UserRepo.UpdateProfile(ctx, updateProfile, idInt)
+	cmd, err := u.usersRepo.UpdateProfile(ctx, updateProfile, idInt)
 
 	if err != nil {
 		log.Println("Insert profile error:", err)

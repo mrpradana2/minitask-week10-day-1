@@ -9,15 +9,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Movieshandler struct{}
+type Movieshandler struct{
+	moviesRepo *repositories.MoviesRepository
+}
 
-func NewMovieshandler() *Movieshandler {
-	return &Movieshandler{}
+func NewMovieshandler(moviesRepo *repositories.MoviesRepository) *Movieshandler {
+	return &Movieshandler{moviesRepo: moviesRepo}
 }
 
 // Get all movies
 func (m *Movieshandler) GetMovies(ctx *gin.Context) {
-	result, err := repositories.MovieRepo.GetMovies(ctx)
+	result, err := m.moviesRepo.GetMovies(ctx)
 
 	if err != nil {
 		log.Println("[ERROR]", err.Error())
@@ -52,7 +54,7 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 		return
 	}
 
-	cmd, err := repositories.MovieRepo.AddMovie(ctx, newDataMovie)
+	cmd, err := m.moviesRepo.AddMovie(ctx, newDataMovie)
 
 	if err != nil {
 		log.Println("Insert profile error:", err)

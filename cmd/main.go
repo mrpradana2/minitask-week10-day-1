@@ -10,7 +10,8 @@ import (
 )
 
 func main() {
-	if err := pkg.Connect(); err != nil {
+	db, err := pkg.Connect()
+	if  err != nil {
 		log.Printf("unable to create connection pool:  %v\n", err)
 		os.Exit(1)
 	}
@@ -18,10 +19,10 @@ func main() {
 	// closing DB
 	defer func()  {
 		log.Println("Closing DB...")
-		pkg.DB.Close()	
+		db.Close()	
 	}()
 
-    router := routes.InitRouter()
+    router := routes.InitRouter(db)
 
     router.Run()
 }

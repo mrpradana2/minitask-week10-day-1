@@ -2,13 +2,14 @@ package routes
 
 import (
 	"tikcitz-app/internals/handlers"
+	"tikcitz-app/internals/repositories"
 
 	"github.com/gin-gonic/gin"
 )
 
-func InitRouterUsers(router *gin.Engine) {
+func InitRouterUsers(router *gin.Engine, usersRepo *repositories.UserRepository) {
 	routerUsers := router.Group("/users")
-	usersHandler := handlers.NewUsersHandlers()
+	usersHandler := handlers.NewUsersHandlers(usersRepo)
 
 	// add user
 	routerUsers.POST("/signup", usersHandler.UserRegister)
@@ -20,6 +21,6 @@ func InitRouterUsers(router *gin.Engine) {
 	routerUsers.GET("/profile/:id", usersHandler.GetProfileById)
 
 	// Update data profile
-	routerUsers.POST("/profile/:id", usersHandler.UpdateProfile)
+	routerUsers.PUT("/profile/:id", usersHandler.UpdateProfile)
 
 }

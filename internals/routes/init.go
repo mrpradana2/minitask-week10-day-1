@@ -4,34 +4,19 @@ import (
 	"tikcitz-app/internals/repositories"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func InitRouter() *gin.Engine {
+func InitRouter(db *pgxpool.Pool) *gin.Engine {
 	router := gin.Default()
 
-    repositories.NewMoviesRepository()
-    repositories.NewUserRepository()
+    moviesRepo := repositories.NewMoviesRepository(db)
+    usersRepo := repositories.NewUserRepository(db)
 
-	InitRouterUsers(router)
-	InitRouterMovies(router)
+	InitRouterUsers(router, usersRepo)
+	InitRouterMovies(router, moviesRepo)
 
 	return router
-
-    // router.POST("movies", func(ctx *gin.Context) {
-    //     newMovie := &moviesStruct{}
-    //     if err := ctx.ShouldBind(newMovie); err != nil {
-    //         ctx.JSON(http.StatusInternalServerError, gin.H{
-    //             "msg": "terjadi kesalahan sisten",
-    //         })
-    //         return
-    //     }
-
-    //     newMovies := append(movies, *newMovie)
-    //     ctx.JSON(http.StatusOK, gin.H{
-    //         "msg": "success",
-    //         "data": newMovies,
-    //     })
-    // })
 
     // router.GET("movies/movie-upcoming", func(ctx *gin.Context) {
     //     result := []moviesStruct{}
