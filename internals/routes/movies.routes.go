@@ -19,4 +19,7 @@ func InitRouterMovies(router *gin.Engine, moviesRepo *repositories.MoviesReposit
 
 	// Router update movie
 	routerMovies.PUT("/edit/:id", moviesHandler.UpdateMovie)
+
+	// Router delete movie
+	routerMovies.DELETE("/delete/:id", moviesHandler.DeleteMovie)
 }

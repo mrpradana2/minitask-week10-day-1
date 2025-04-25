@@ -18,7 +18,7 @@ func NewMovieshandler(moviesRepo *repositories.MoviesRepository) *Movieshandler 
 	return &Movieshandler{moviesRepo: moviesRepo}
 }
 
-// Get all movies
+// Handler get all movies
 func (m *Movieshandler) GetMovies(ctx *gin.Context) {
 	result, err := m.moviesRepo.GetMovies(ctx.Request.Context())
 
@@ -43,7 +43,7 @@ func (m *Movieshandler) GetMovies(ctx *gin.Context) {
 	})
 }
 
-// Add movie
+// Handler add movie
 func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 	newDataMovie := models.MoviesStruct{}
 
@@ -118,3 +118,43 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 		"msg": "data successfully changed",
 	})
 }
+
+// handler delete movie
+func (m *Movieshandler) DeleteMovie(ctx *gin.Context) {
+	idStr, ok := ctx.Params.Get("id")
+
+	// handling error jika param tidak ada
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"msg": "Param id is needed",
+		})
+		return
+	}
+
+	idInt, err := strconv.Atoi(idStr)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "an error occurred on the server",
+		})
+		return
+	}
+
+	cmd, err := m.moviesRepo.DeleteMovie(ctx.Request.Context(), idInt)
+
+	if err != nil {
+		log.Println("Insert profile error:", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occurred on the server"})
+		return
+	}
+
+	if cmd.RowsAffected() == 0 {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Movie not found"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"msg": "data successfully deleted",
+	})
+}
+

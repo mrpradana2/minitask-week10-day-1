@@ -62,3 +62,16 @@ func (u *MoviesRepository) UpdateMovie(ctx context.Context, updateMovie *models.
 
 	return cmd, nil
 }
+
+// repository delete movie
+func (u *MoviesRepository) DeleteMovie(ctx context.Context, idInt int) (pgconn.CommandTag, error) {
+	query := "DELETE FROM movies WHERE id = $1"
+	values := []any{idInt}
+	cmd, err := u.db.Exec(ctx, query, values...)
+
+	if err != nil {
+		return pgconn.CommandTag{}, nil
+	}
+
+	return cmd, nil
+}
