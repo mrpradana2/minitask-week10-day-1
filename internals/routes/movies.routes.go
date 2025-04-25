@@ -13,4 +13,7 @@ func InitRouterMovies(router *gin.Engine) {
 	
 	// get all movie
 	routerMovies.GET("", moviesHandler.GetMovies)
+
+	// add movie
+	routerMovies.POST("/add", moviesHandler.AddMovie)
 }

@@ -13,5 +13,4 @@ type MoviesStruct struct {
 	Casts           []string  `json:"casts" form:"casts"`
 	Status_movie_id int       `json:"status_movie_id" form:"status_movie_id"`
 	Genres          []string  `json:"genres" form:"genres"`
-	Status_movie    string    `json:"status_movie" form:"status_movie"`
 }
