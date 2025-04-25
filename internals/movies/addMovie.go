@@ -1,5 +1,0 @@
-package movies
-
-func AddMovie() {
-
-}
