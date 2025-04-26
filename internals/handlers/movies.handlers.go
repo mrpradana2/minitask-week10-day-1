@@ -236,3 +236,51 @@ func (m *Movieshandler) GetDetailMovie(ctx *gin.Context) {
 		"data": result,
 	})
 }
+
+// handler get movie with pagination
+func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
+	pageQ := ctx.Query("page")
+
+	if pageQ == "" {
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"msg": "query page is needed",
+		})
+		return
+	}
+
+	pageQInt, err := strconv.Atoi(pageQ)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "an error occurred on the server",
+		})
+		return
+	}
+
+	var offset int
+	if pageQInt == 1 {
+		offset = 0
+	} else {
+		offset = pageQInt * 5 - 5
+	}
+
+	result, err := m.moviesRepo.GetMoviesWithPagination(ctx.Request.Context(), models.MoviesStruct{}, offset)
+
+	if err != nil {
+		log.Println("Get Movie error:", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occurred on the server"})
+		return
+	}
+
+	if len(result) < 1 {
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"msg": "movie not found",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"msg": "success",
+		"data": result,
+	})
+}

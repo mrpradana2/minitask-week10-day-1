@@ -31,4 +31,7 @@ func InitRouterMovies(router *gin.Engine, moviesRepo *repositories.MoviesReposit
 
 	// router get detail movie
 	routerMovies.GET("/detail/:id", moviesHandler.GetDetailMovie)
+
+	// router get movie with pagination
+	routerMovies.GET("/page", moviesHandler.GetMoviesWithPagination)
 }
