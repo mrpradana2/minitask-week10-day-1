@@ -25,4 +25,7 @@ func InitRouterMovies(router *gin.Engine, moviesRepo *repositories.MoviesReposit
 
 	// router get movie upcoming
 	routerMovies.GET("/moviesupcoming", moviesHandler.GetMoviesUpcoming)
+
+	// router get movie popular
+	routerMovies.GET("/moviespopular", moviesHandler.GetMoviesPopular)
 }

@@ -178,3 +178,26 @@ func (m *Movieshandler) GetMoviesUpcoming(ctx *gin.Context) {
 		"data": result,
 	})
 }
+
+// handler get movie popular
+func (m *Movieshandler) GetMoviesPopular(ctx *gin.Context) {
+	result, err := m.moviesRepo.GetMoviePopular(ctx.Request.Context())
+	if err != nil {
+		log.Println("Get Movie error:", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occurred on the server"})
+		return
+	}
+
+	if len(result) < 1 {
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"msg": "movie not found",
+			"data": result,
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"msg": "success",
+		"data": result,
+	})
+}
