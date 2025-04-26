@@ -117,3 +117,25 @@ func (u *MoviesRepository) GetMoviePopular(ctx context.Context) ([]models.Movies
 	}
 	return result, nil
 }
+
+// repository get detail movie
+func (u *MoviesRepository) GetDetailMovie(ctx context.Context, movies models.MoviesStruct, IdInt int) ([]models.MoviesStruct, error) {
+	query := "select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts, array_agg(g.genre_name) from movies m join movie_genre mg on m.id = mg.movie_id join genres g on mg.genre_id = g.id where m.id = $1 group by m.id;"
+	values := []any{IdInt}
+	rows, err := u.db.Query(ctx, query, values...)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+	var result []models.MoviesStruct
+	for rows.Next() {
+		var movies models.MoviesStruct
+		if err := rows.Scan(&movies.Id, &movies.Title, &movies.Release_date, &movies.Overview, &movies.Image_path, &movies.Duration, &movies.Director_name, &movies.Casts, &movies.Genres); err != nil {
+			return nil, err
+		}
+		result = append(result, movies)
+	}
+
+	return result, nil
+}

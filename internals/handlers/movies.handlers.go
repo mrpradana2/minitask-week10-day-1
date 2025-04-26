@@ -201,3 +201,38 @@ func (m *Movieshandler) GetMoviesPopular(ctx *gin.Context) {
 		"data": result,
 	})
 }
+
+// handler get detail movie
+func (m *Movieshandler) GetDetailMovie(ctx *gin.Context) {
+	// ambil id param
+	idStr, ok := ctx.Params.Get("id")
+
+	// handling error jika param tidak ada
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"msg": "Param id is needed",
+		})
+		return
+	}
+
+	idInt, err := strconv.Atoi(idStr)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "an error occurred on the server",
+		})
+		return
+	}
+
+	result, err := m.moviesRepo.GetDetailMovie(ctx.Request.Context(), models.MoviesStruct{}, idInt)
+	if err != nil {
+		log.Println("Get Movie error:", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occurred on the server"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"msg": "success",
+		"data": result,
+	})
+}
