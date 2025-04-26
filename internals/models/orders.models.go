@@ -12,4 +12,9 @@ type OrdersStruct struct {
 	Date               string `json:"date" form:"date"`
 	Time               string `json:"time" form:"time"`
 	Cinema_id          int    `json:"cinema_id" form:"cinema_id"`
+
+	// batas
+	Cinema_path     string `json:"cinema_path"`
+	Title           string `json:"title"`
+	Payment_methode string `json:"payment_methode"`
 }

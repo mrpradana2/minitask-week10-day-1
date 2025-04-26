@@ -29,3 +29,26 @@ func (o *OrdersRepository) CreateOrder(ctx context.Context, order models.OrdersS
 	return cmd, nil
 }
 
+// repository get order history user
+func (o *OrdersRepository) GetOrderHistory(ctx context.Context, IdInt int) ([]models.OrdersStruct, error) {
+	query := "SELECT o.user_id, o.total_price, o.phone_number, o.paid, pm.name, m.title, c.image_path FROM orders o JOIN payment_methode pm ON o.payment_methode_id = pm.id JOIN movies m ON m.id = o.movie_id JOIN cinemas c ON o.cinema_id = c.id WHERE o.user_id = $1"
+	values := []any{IdInt}
+	rows, err := o.db.Query(ctx, query, values...)
+	if err != nil {
+		return nil, err 	
+	} 
+	
+	defer rows.Close()
+
+	var result []models.OrdersStruct
+	for rows.Next() {
+		var order models.OrdersStruct
+		err := rows.Scan(&order.User_id, &order.Total_price, &order.Phone_number, &order.Paid, &order.Payment_methode, &order.Title, &order.Cinema_path)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, order)
+	}
+
+	return result, nil
+}

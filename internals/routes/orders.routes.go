@@ -8,9 +8,12 @@ import (
 )
 
 func InitRouterOrders(router *gin.Engine, ordersRepo *repositories.OrdersRepository) {
-	routerOrders := router.Group("/order/:id")
+	routerOrders := router.Group("/order")
 	ordersHandler := handlers.NewOrdersHandler(ordersRepo)
 
 	// router create order
-	routerOrders.POST("", ordersHandler.CreateOrder)
+	routerOrders.POST("/:id", ordersHandler.CreateOrder)
+
+	// router get order history
+	routerOrders.GET("/history/:id", ordersHandler.GetOrderHistory)
 }

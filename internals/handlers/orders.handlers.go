@@ -67,3 +67,47 @@ func (o *OrdersHandler) CreateOrder(ctx *gin.Context) {
 		"msg": "add data successfully", 
 	})
 }
+
+// Handler get order history user
+func (o *OrdersHandler) GetOrderHistory(ctx *gin.Context) {
+	idStr, ok := ctx.Params.Get("id")
+
+	// handling error jika param tidak ada
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"msg": "Param id is needed",
+		})
+		return
+	}
+
+	idInt, err := strconv.Atoi(idStr)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "an error occurred on the server",
+		})
+		return
+	}
+
+	result, err := o.ordersRepo.GetOrderHistory(ctx.Request.Context(), idInt)
+
+	if err != nil {
+		log.Println("[ERROR]: ", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "an error occured on the server",
+		})
+		return
+	}
+
+	if len(result) < 1 {
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"msg": "order not found",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"msg": "success",
+		"data": result,
+	})
+}
