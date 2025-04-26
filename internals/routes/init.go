@@ -12,9 +12,11 @@ func InitRouter(db *pgxpool.Pool) *gin.Engine {
 
     moviesRepo := repositories.NewMoviesRepository(db)
     usersRepo := repositories.NewUserRepository(db)
+    scheduleRepo := repositories.NewScheduleRepository(db)
 
 	InitRouterUsers(router, usersRepo)
 	InitRouterMovies(router, moviesRepo)
+    InitRouterSchedule(router, scheduleRepo)
 
 	return router
 

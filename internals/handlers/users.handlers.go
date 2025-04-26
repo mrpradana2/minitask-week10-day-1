@@ -18,7 +18,7 @@ func NewUsersHandlers(usersRepo *repositories.UserRepository) *UsersHandler {
 	return &UsersHandler{usersRepo: usersRepo}
 }
 
-// add user
+// handler add user
 func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 	newDataUser := models.SignupPayload{}
 
@@ -46,7 +46,7 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 	})
 }
 
-// user login
+// handler user login
 func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 	auth := models.UsersStruct{}
 
@@ -87,7 +87,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 	})
 }
 
-// get profile
+// handler get profile
 func (u *UsersHandler) GetProfileById(ctx *gin.Context) {
 	idStr, ok := ctx.Params.Get("id")
 
@@ -123,7 +123,7 @@ func (u *UsersHandler) GetProfileById(ctx *gin.Context) {
 	})
 }
 
-// update profile
+// handler update profile
 func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 	var updateProfile models.ProfileStruct
 
