@@ -17,6 +17,8 @@ func NewScheduleRepository(db *pgxpool.Pool) *ScheduleRepository {
 
 // repository get schedule
 func (s *ScheduleRepository) GetScheduleMovie(ctx context.Context, schedule *models.ScheduleStruct) ([]models.ScheduleStruct, error) {
+
+	// mengambil data schedule dengan join tabel cinema untuk mendapatkan informasi cinema  
 	query := "SELECT s.id, c.cinema_name, s.date, s.times, s.location, s.price FROM schedule s JOIN cinemas c ON s.cinema_id = c.id"
 	rows, err := s.db.Query(ctx, query)
 	if err != nil {

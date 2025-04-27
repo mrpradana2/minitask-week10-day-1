@@ -166,7 +166,7 @@ func (u *MoviesRepository) GetMovieUpcoming(ctx context.Context) ([]models.Movie
 
 // repository get popular movie
 func (u *MoviesRepository) GetMoviePopular(ctx context.Context) ([]models.MoviesStruct, error) {
-	query := "SELECT m.id, m.title, sm.status, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts FROM movies m JOIN status_movie sm ON m.status_movie_id = sm.id WHERE status_movie_id = 2"
+	query := "SELECT m.id, m.title, sm.status, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts, ARRAY_AGG(g.genre_name) FROM movies m JOIN status_movie sm ON m.status_movie_id = sm.id JOIN movie_genre mg ON mg.movie_id = m.id JOIN genres g ON g.id = mg.genre_id WHERE status_movie_id = 2 GROUP BY m.id, sm.status"
 
 	rows, err := u.db.Query(ctx, query)
 	if err != nil {
@@ -177,7 +177,7 @@ func (u *MoviesRepository) GetMoviePopular(ctx context.Context) ([]models.Movies
 	var result []models.MoviesStruct
 	for rows.Next() {
 		var movies models.MoviesStruct
-		if err := rows.Scan(&movies.Id, &movies.Title, &movies.Status_movie, &movies.Release_date, &movies.Overview, &movies.Image_path, &movies.Duration, &movies.Director_name, &movies.Casts); err != nil {
+		if err := rows.Scan(&movies.Id, &movies.Title, &movies.Status_movie, &movies.Release_date, &movies.Overview, &movies.Image_path, &movies.Duration, &movies.Director_name, &movies.Casts, &movies.Genres); err != nil {
 			return nil, err
 		}
 		result = append(result, movies)

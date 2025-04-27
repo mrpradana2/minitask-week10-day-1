@@ -17,6 +17,8 @@ func NewSeatsRepository(db *pgxpool.Pool) *SeatsRepository {
 
 // repository get available seats
 func (s *SeatsRepository) GetSeatsAvailable(ctx context.Context, cinema models.MoviesStruct, query string) ([]models.SeatsStruct, error) {
+	
+	// mengambil data cinema di tabel cinema
 	queryGetCinema := "SELECT id, cinema_name, image_path FROM cinemas"
 	rows, errGetcinema := s.db.Query(ctx, queryGetCinema)
 	if errGetcinema != nil {
@@ -31,6 +33,8 @@ func (s *SeatsRepository) GetSeatsAvailable(ctx context.Context, cinema models.M
 		if err != nil {
 			return []models.SeatsStruct{}, err
 		}
+
+		// mengecek jika cinema_name(dari query) ada dengan data cinema_name di database maka masukkan ke variable findcinema 
 		if cinema.Cinema_name == query {
 			findCinema = append(findCinema, cinema)
 		}
@@ -40,6 +44,7 @@ func (s *SeatsRepository) GetSeatsAvailable(ctx context.Context, cinema models.M
 		return []models.SeatsStruct{}, nil
 	}
 
+	// mengambil data schedule berdasarkan cinema id dan kursi yang sudah terjual
 	queryGetSeats := "SELECT s.id, s.seat, s.sold, c.cinema_name FROM seats s JOIN schedule s2 ON s.schedule_id = s2.id JOIN cinemas c ON c.id = s2.cinema_id WHERE s2.cinema_id = $1 AND s.sold = false"
 	values := []any{findCinema[0].Id}
 	rowsSeat, errGetSeat := s.db.Query(ctx, queryGetSeats, values...)
