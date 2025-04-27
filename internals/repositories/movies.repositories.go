@@ -81,6 +81,8 @@ func (u *MoviesRepository) AddMovie(ctx context.Context, newDataMovie models.Mov
 
 // repository update movie
 func (u *MoviesRepository) UpdateMovie(ctx context.Context, updateMovie *models.MoviesStruct, idInt int) (pgconn.CommandTag, error) {
+
+	// melakukan update movie berdasarkan id movie
 	query := "UPDATE movies SET title = $1, image_path = $2, overview = $3, release_date = $4, director_name = $5, duration = $6, casts = $7, status_movie_id = $8 WHERE id = $9"
 
 	values := []any{updateMovie.Title, updateMovie.Image_path, updateMovie.Overview, updateMovie.Release_date, updateMovie.Director_name, updateMovie.Duration, updateMovie.Casts, updateMovie.Status_movie_id, idInt}
@@ -90,6 +92,7 @@ func (u *MoviesRepository) UpdateMovie(ctx context.Context, updateMovie *models.
 		return pgconn.CommandTag{}, err
 	}
 
+	// melakukan delete pada tabel asosiasi movie_genre berdasarkan movie id
 	queryDelMovieGenre := "DELETE FROM movie_genre WHERE movie_id = $1"
 	_, errDelMovieGenre := u.db.Exec(ctx, queryDelMovieGenre, idInt)
 	if errDelMovieGenre != nil {
@@ -125,6 +128,8 @@ func (u *MoviesRepository) UpdateMovie(ctx context.Context, updateMovie *models.
 
 // repository delete movie
 func (u *MoviesRepository) DeleteMovie(ctx context.Context, idInt int) (pgconn.CommandTag, error) {
+
+	// melakukan delete movie berdasarkan movie id
 	query := "DELETE FROM movies WHERE id = $1"
 	values := []any{idInt}
 	cmd, err := u.db.Exec(ctx, query, values...)
@@ -138,7 +143,9 @@ func (u *MoviesRepository) DeleteMovie(ctx context.Context, idInt int) (pgconn.C
 
 // repository get upcoming movie
 func (u *MoviesRepository) GetMovieUpcoming(ctx context.Context) ([]models.MoviesStruct, error) {
-	query := "SELECT m.id, m.title, sm.status, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts FROM movies m JOIN status_movie sm ON m.status_movie_id = sm.id WHERE status_movie_id = 1"
+
+	// mengambil data movie 
+	query := "SELECT m.id, m.title, sm.status, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts, ARRAY_AGG(g.genre_name) FROM movies m JOIN status_movie sm ON m.status_movie_id = sm.id JOIN movie_genre mg ON mg.movie_id = m.id JOIN genres g ON g.id = mg.genre_id WHERE status_movie_id = 1 GROUP BY m.id, sm.status"
 
 	rows, err := u.db.Query(ctx, query)
 	if err != nil {
@@ -149,7 +156,7 @@ func (u *MoviesRepository) GetMovieUpcoming(ctx context.Context) ([]models.Movie
 	var result []models.MoviesStruct
 	for rows.Next() {
 		var movies models.MoviesStruct
-		if err := rows.Scan(&movies.Id, &movies.Title, &movies.Status_movie, &movies.Release_date, &movies.Overview, &movies.Image_path, &movies.Duration, &movies.Director_name, &movies.Casts); err != nil {
+		if err := rows.Scan(&movies.Id, &movies.Title, &movies.Status_movie, &movies.Release_date, &movies.Overview, &movies.Image_path, &movies.Duration, &movies.Director_name, &movies.Casts, &movies.Genres); err != nil {
 			return nil, err
 		}
 		result = append(result, movies)
@@ -180,7 +187,9 @@ func (u *MoviesRepository) GetMoviePopular(ctx context.Context) ([]models.Movies
 
 // repository get detail movie
 func (u *MoviesRepository) GetDetailMovie(ctx context.Context, movies models.MoviesStruct, IdInt int) ([]models.MoviesStruct, error) {
-	query := "select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts, array_agg(g.genre_name) from movies m join movie_genre mg on m.id = mg.movie_id join genres g on mg.genre_id = g.id where m.id = $1 group by m.id;"
+
+	// mengambil data movie dan melakukan join dengan tabel asosiasi movie_genre dan tabel genre untuk mengambil genre yang digabung menjadi array berdasarkan id movie 
+	query := "SELECT m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts, array_agg(g.genre_name) FROM movies m JOIN movie_genre mg ON m.id = mg.movie_id JOIN genres g ON mg.genre_id = g.id WHERE m.id = $1 GROUP BY m.id"
 	values := []any{IdInt}
 	rows, err := u.db.Query(ctx, query, values...)
 	if err != nil {
@@ -202,7 +211,9 @@ func (u *MoviesRepository) GetDetailMovie(ctx context.Context, movies models.Mov
 
 // repository get movie with pagination
 func (u *MoviesRepository) GetMoviesWithPagination(ctx context.Context, movie models.MoviesStruct, offset int) ([]models.MoviesStruct, error) {
-	query := "SELECT m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts, array_agg(g.genre_name) from movies m join movie_genre mg on m.id = mg.movie_id join genres g on mg.genre_id = g.id group by m.id order by m.id asc limit 5 offset $1;"
+
+	// mengambil data movies menggunakan paginasi yang di join dengan tabel asosiasi movie_genre dan tabel genres untuk mengambil genre yang gabung menjadi array
+	query := "SELECT m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts, ARRAY_AGG(g.genre_name) FROM movies m JOIN movie_genre mg ON m.id = mg.movie_id JOIN genres g ON mg.genre_id = g.id GROUP BY m.id ORDER BY m.id ASC LIMIT 5 OFFSET $1;"
 	values := []any{offset}
 	rows, err := u.db.Query(ctx, query, values...)
 	if err != nil {
