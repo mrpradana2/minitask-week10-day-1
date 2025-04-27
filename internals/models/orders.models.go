@@ -20,6 +20,6 @@ type OrdersStruct struct {
 	Cinema_path     string `json:"cinema_path"`
 	Title           string `json:"title"`
 	Payment_methode string `json:"payment_methode"`
-	SeatId []int `json:"seat_id,omitempty" form:"seat_id"`
-	SeatStr []string `json:"seats"`
+	// SeatId []int `json:"seat_id,omitempty" form:"seat_id"`
+	SeatStr []string `json:"seats" form:"seats"`
 }
