@@ -33,12 +33,12 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 	cmd, err := u.usersRepo.UserRegister(ctx.Request.Context(), newDataUser)
 
 	if err != nil {
-		log.Println("Insert profile error:", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "Terjadi kesalahan server"})
+		log.Println("[ERROR]:", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occured on the server"})
 	}
 
 	if cmd.RowsAffected() == 0 {
-		log.Println("Query Gagal, Tidak merubah data di DB")
+		log.Println("Query failed, did not change the data in the database")
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
@@ -53,7 +53,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&auth); err != nil {
 		log.Println("Binding error:", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"msg": "Data yang dikirim tidak valid",
+			"msg": "invalid data sent",
 		})
 		return
 	}
@@ -63,8 +63,8 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 	result, err := u.usersRepo.UserLogin(ctx.Request.Context(), auth)
 
 	if err != nil {
-		log.Println("Insert profile error:", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "Terjadi kesalahan server"})
+		log.Println("[ERROR]:", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occurred on the server"})
 		return
 	}
 
@@ -112,7 +112,7 @@ func (u *UsersHandler) GetProfileById(ctx *gin.Context) {
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"msg": "an error occurred on the server",
+			"msg": "user profile not found",
 		})
 		return
 	}
@@ -131,7 +131,7 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&updateProfile); err != nil {
 		log.Println("Binding error:", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"msg": "Data yang dikirim tidak valid",
+			"msg": "invalid data sent",
 		})
 		return
 	}
@@ -158,13 +158,17 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 	cmd, err := u.usersRepo.UpdateProfile(ctx.Request.Context(), updateProfile, idInt)
 
 	if err != nil {
-		log.Println("Insert profile error:", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "Terjadi kesalahan server"})
+		log.Println("[ERROR]:", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occurred on the server"})
 		return
 	}
 
 	if cmd.RowsAffected() == 0 {
-		log.Println("Query gagal, tidak merubah data di DB")
+		log.Println("Query failed, did not change the data in the database")
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"msg": "user not found",
+		})
+		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{

@@ -52,10 +52,10 @@ func (u *UserRepository) UserLogin(ctx context.Context, auth models.UsersStruct)
 
 // Repository get rpofile by id
 func (u *UserRepository) GetProfileById(ctx context.Context, idInt int) (models.ProfileStruct, error) {
-	query := "SELECT phone_number, first_name, last_name, photo_path, title FROM profile WHERE user_id = $1"
+	query := "SELECT user_id, phone_number, first_name, last_name, photo_path, title FROM profile WHERE user_id = $1"
 	values := []any{idInt}
 	var result models.ProfileStruct
-	if err := u.db.QueryRow(ctx, query, values...).Scan(&result.Phone_number, &result.First_name, &result.Last_name, &result.Photo_path, &result.Title); err != nil {
+	if err := u.db.QueryRow(ctx, query, values...).Scan(&result.User_Id, &result.Phone_number, &result.First_name, &result.Last_name, &result.Photo_path, &result.Title); err != nil {
 		return models.ProfileStruct{}, err
 	}
 	return result, nil
