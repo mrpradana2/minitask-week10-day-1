@@ -50,18 +50,18 @@ func (o *OrdersHandler) CreateOrder(ctx *gin.Context) {
 		return
 	}
 
-	cmd, err := o.ordersRepo.CreateOrder(ctx.Request.Context(), newOrder, idInt)
+	errCreateOrder := o.ordersRepo.CreateOrder(ctx.Request.Context(), newOrder, idInt)
 
-	if err != nil {
-		log.Println("Insert profile error:", err)
+	if errCreateOrder != nil {
+		log.Println("Insert profile error:", errCreateOrder)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occurred on the server"})
 		return
 	}
 
-	if cmd.RowsAffected() == 0 {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": "Movie not found"})
-		return
-	}
+	// if cmd.RowsAffected() == 0 {
+	// 	ctx.JSON(http.StatusNotFound, gin.H{"message": "Movie not found"})
+	// 	return
+	// }
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"msg": "add data successfully", 
