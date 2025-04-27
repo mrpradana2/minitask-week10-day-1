@@ -28,6 +28,21 @@ func (o *OrdersRepository) CreateOrder(ctx context.Context, order models.OrdersS
 		return err
 	}
 
+	querySelectPoint := "SELECT point FROM profile WHERE user_id = $1"
+	var point int	
+	errSelectPoint := o.db.QueryRow(ctx, querySelectPoint, IdInt).Scan(&point)
+	if errSelectPoint != nil {
+		return errSelectPoint
+	}
+
+	point = point + 50
+
+	queryUpdatePoint := "UPDATE profile SET point = $1 WHERE user_id = $2"
+	_, errUpdatePoint := o.db.Exec(ctx, queryUpdatePoint, point, IdInt)
+	if errUpdatePoint != nil {
+		return errUpdatePoint
+	}
+
 	// melakukan looping berdasarkan inputan seats
 	for _, seatStr := range order.SeatStr {
 
