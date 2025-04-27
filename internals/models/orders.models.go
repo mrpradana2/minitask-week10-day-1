@@ -6,7 +6,7 @@ import (
 
 type OrdersStruct struct {
 	Id *int `json:"id,omitempty" form:"id,omitempty"`
-	User_id            int    `json:"user_id" form:"user_id"`
+	User_id            int    `json:"user_id" form:"user_id,omitempty"`
 	Movie_id           int    `json:"movie_id,omitempty" form:"movie_id"`
 	Total_price        int    `json:"total_price" form:"total_price"`
 	Full_name          string `json:"full_name,omitempty" form:"full_name"`
@@ -20,6 +20,6 @@ type OrdersStruct struct {
 	Cinema_path     string `json:"cinema_path"`
 	Title           string `json:"title"`
 	Payment_methode string `json:"payment_methode"`
-	SeatId []int `json:"seat_id" form:"seat_id"`
+	SeatId []int `json:"seat_id,omitempty" form:"seat_id"`
 	SeatStr []string `json:"seats"`
 }
