@@ -28,6 +28,7 @@ func (o *OrdersRepository) CreateOrder(ctx context.Context, order models.OrdersS
 		return err
 	}
 
+	// mengambil nilai point user dari tabel profile
 	querySelectPoint := "SELECT point FROM profile WHERE user_id = $1"
 	var point int	
 	errSelectPoint := o.db.QueryRow(ctx, querySelectPoint, IdInt).Scan(&point)
@@ -35,8 +36,10 @@ func (o *OrdersRepository) CreateOrder(ctx context.Context, order models.OrdersS
 		return errSelectPoint
 	}
 
+	// menambahkan point +50 untuk setiap kali order
 	point = point + 50
 
+	// melakukan update point terbaru
 	queryUpdatePoint := "UPDATE profile SET point = $1 WHERE user_id = $2"
 	_, errUpdatePoint := o.db.Exec(ctx, queryUpdatePoint, point, IdInt)
 	if errUpdatePoint != nil {
