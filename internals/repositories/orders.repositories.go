@@ -46,11 +46,11 @@ func (o *OrdersRepository) CreateOrder(ctx context.Context, order models.OrdersS
 
 // repository get order history user
 func (o *OrdersRepository) GetOrderHistory(ctx context.Context, IdInt int) ([]models.OrdersStruct, error) {
-	query := "SELECT o.user_id, o.total_price, o.paid, o.date, o.time, pm.name, m.title, c.image_path FROM orders o JOIN payment_methode pm ON o.payment_methode_id = pm.id JOIN movies m ON m.id = o.movie_id JOIN cinemas c ON o.cinema_id = c.id WHERE o.user_id = $1"
+	query := "SELECT o.user_id, o.total_price, o.paid, o.date, o.time, pm.name, m.title, c.image_path, array_agg(s.seat) FROM orders o JOIN payment_methode pm ON o.payment_methode_id = pm.id JOIN movies m ON m.id = o.movie_id JOIN cinemas c ON o.cinema_id = c.id JOIN order_seats os ON os.order_id = o.id join seats s ON s.id = os.seat_id WHERE o.user_id = $1 GROUP BY o.user_id, o.total_price, o.paid, o.date, o.time, pm.name, m.title, c.image_path"
 	values := []any{IdInt}
 	rows, err := o.db.Query(ctx, query, values...)
 	if err != nil {
-		return nil, err 	
+		return nil, err
 	} 
 	
 	defer rows.Close()
@@ -58,7 +58,7 @@ func (o *OrdersRepository) GetOrderHistory(ctx context.Context, IdInt int) ([]mo
 	var result []models.OrdersStruct
 	for rows.Next() {
 		var order models.OrdersStruct
-		err := rows.Scan(&order.User_id, &order.Total_price, &order.Paid, &order.Date, &order.Time, &order.Payment_methode, &order.Title, &order.Cinema_path)
+		err := rows.Scan(&order.User_id, &order.Total_price, &order.Paid, &order.Date, &order.Time, &order.Payment_methode, &order.Title, &order.Cinema_path, &order.SeatStr)
 		if err != nil {
 			return nil, err
 		}

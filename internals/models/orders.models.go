@@ -21,4 +21,5 @@ type OrdersStruct struct {
 	Title           string `json:"title"`
 	Payment_methode string `json:"payment_methode"`
 	SeatId []int `json:"seat_id" form:"seat_id"`
+	SeatStr []string `json:"seats"`
 }
