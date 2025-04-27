@@ -18,6 +18,8 @@ func NewMoviesRepository(db *pgxpool.Pool) *MoviesRepository {
 
 // repository get movie all
 func (u *MoviesRepository) GetMovies(ctx context.Context) ([]models.MoviesStruct, error) {
+
+	// mengambil data movie yang di join dengan table genre
 	query := "SELECT m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts, array_agg(g.genre_name) from movies m join movie_genre mg on m.id = mg.movie_id join genres g on mg.genre_id = g.id group by m.id;"
 	rows, err := u.db.Query(ctx, query)
 	if err != nil {
@@ -38,15 +40,43 @@ func (u *MoviesRepository) GetMovies(ctx context.Context) ([]models.MoviesStruct
 }
 
 // repository add movie
-func (u *MoviesRepository) AddMovie(ctx context.Context, newDataMovie models.MoviesStruct) (pgconn.CommandTag, error) {
-	query := "INSERT INTO movies (title, image_path, overview, release_date, director_name, duration, casts, status_movie_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"
+func (u *MoviesRepository) AddMovie(ctx context.Context, newDataMovie models.MoviesStruct) (error) {
+
+	// menambahakn data movie baru
+	query := "INSERT INTO movies (title, image_path, overview, release_date, director_name, duration, casts, status_movie_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id"
 	values := []any{newDataMovie.Title, newDataMovie.Image_path, newDataMovie.Overview, newDataMovie.Release_date, newDataMovie.Director_name, newDataMovie.Duration, newDataMovie.Casts, newDataMovie.Status_movie_id}
-	cmd, err := u.db.Exec(ctx, query, values...)
+	var movieId int
+	err := u.db.QueryRow(ctx, query, values...).Scan(&movieId)
 	if err != nil {
-		return pgconn.CommandTag{}, err
+		return err
 	}
 
-	return cmd, nil
+	for _, genre := range newDataMovie.Genres {
+
+		// menambahkan genre baru jika belum terdaftar
+		queryGenres := "INSERT INTO genres (genre_name) VALUES ($1) ON CONFLICT (genre_name) DO NOTHING"
+		_, err := u.db.Exec(ctx, queryGenres, genre)
+		if err != nil {
+			return err
+		}
+
+		// ambil genre id
+		var genreId int
+		queryGenreId := "SELECT id FROM genres WHERE genre_name = $1"
+        err = u.db.QueryRow(ctx, queryGenreId, genre).Scan(&genreId)
+        if err != nil {
+            return err
+        }
+
+		// tambahkan movie id dan genre id ke tabel asosiasi movie_genre
+		queryMovieGenre := "INSERT INTO movie_genre (movie_id, genre_id) VALUES ($1, $2)"
+		_, err = u.db.Exec(ctx, queryMovieGenre, movieId, genreId)
+        if err != nil {
+            return err
+        }
+	}
+
+	return nil
 }
 
 // repository update movie

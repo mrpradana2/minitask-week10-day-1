@@ -25,7 +25,7 @@ func (m *Movieshandler) GetMovies(ctx *gin.Context) {
 	if err != nil {
 		log.Println("[ERROR]", err.Error())
 		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"msg": "terjadi kesalahan sistem",
+			"msg": "an error occurred on the server",
 		})
 		return
 	}
@@ -55,15 +55,12 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 		return
 	}
 
-	cmd, err := m.moviesRepo.AddMovie(ctx.Request.Context(), newDataMovie)
+	err := m.moviesRepo.AddMovie(ctx.Request.Context(), newDataMovie)
 
 	if err != nil {
-		log.Println("Insert profile error:", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "Terjadi kesalahan server"})
-	}
-
-	if cmd.RowsAffected() == 0 {
-		log.Println("Query Gagal, Tidak merubah data di DB")
+		log.Println("[ERROR]:", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occurred on the server"})
+		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{

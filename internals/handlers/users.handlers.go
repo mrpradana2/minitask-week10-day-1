@@ -34,7 +34,8 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 
 	if err != nil {
 		log.Println("[ERROR]:", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occured on the server"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "user already registered"})
+		return
 	}
 
 	if cmd.RowsAffected() == 0 {

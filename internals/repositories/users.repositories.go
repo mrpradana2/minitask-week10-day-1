@@ -19,7 +19,7 @@ func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 
 // Repository add user
 func (u *UserRepository) UserRegister(ctx context.Context, newDataUser models.SignupPayload) (pgconn.CommandTag, error) {
-
+	// menambahkan user baru dengan mengembalikan id user baru
 	queryUser := "INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id"
 	var userID int
 	err := u.db.QueryRow(ctx, queryUser, newDataUser.Email, newDataUser.Password).Scan(&userID)
@@ -28,6 +28,7 @@ func (u *UserRepository) UserRegister(ctx context.Context, newDataUser models.Si
 		return pgconn.CommandTag{}, err
 	}
 
+	// menambahkan baris baru untuk data profile user baru
 	queryProfile := "INSERT INTO profile (user_id, modified_at) VALUES ($1, $2)"
 	cmd, err := u.db.Exec(ctx, queryProfile, userID, time.Now())
 	if err != nil {
