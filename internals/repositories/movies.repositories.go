@@ -90,6 +90,36 @@ func (u *MoviesRepository) UpdateMovie(ctx context.Context, updateMovie *models.
 		return pgconn.CommandTag{}, err
 	}
 
+	queryDelMovieGenre := "DELETE FROM movie_genre WHERE movie_id = $1"
+	_, errDelMovieGenre := u.db.Exec(ctx, queryDelMovieGenre, idInt)
+	if errDelMovieGenre != nil {
+		return pgconn.CommandTag{}, nil
+	}
+
+	for _, genre := range updateMovie.Genres {
+		// menambahkan genre baru jika belum terdaftar
+		queryGenres := "INSERT INTO genres (genre_name) VALUES ($1) ON CONFLICT (genre_name) DO NOTHING"
+		_, err := u.db.Exec(ctx, queryGenres, genre)
+		if err != nil {
+			return pgconn.CommandTag{}, err
+		}
+
+		// ambil genre id
+		var genreId int
+		queryGenreId := "SELECT id FROM genres WHERE genre_name = $1"
+        err = u.db.QueryRow(ctx, queryGenreId, genre).Scan(&genreId)
+        if err != nil {
+            return pgconn.CommandTag{}, err
+        }
+
+		// tambahkan movie id dan genre id ke tabel asosiasi movie_genre
+		queryMovieGenre := "INSERT INTO movie_genre (movie_id, genre_id) VALUES ($1, $2)"
+		_, err = u.db.Exec(ctx, queryMovieGenre, idInt, genreId)
+        if err != nil {
+            return pgconn.CommandTag{}, err
+        }
+	}
+
 	return cmd, nil
 }
 
