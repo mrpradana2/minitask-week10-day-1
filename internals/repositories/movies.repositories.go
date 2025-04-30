@@ -20,7 +20,7 @@ func NewMoviesRepository(db *pgxpool.Pool) *MoviesRepository {
 func (u *MoviesRepository) GetMovies(ctx context.Context) ([]models.MoviesStruct, error) {
 
 	// mengambil data movie yang di join dengan table genre
-	query := "SELECT m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts, array_agg(g.genre_name) from movies m join movie_genre mg on m.id = mg.movie_id join genres g on mg.genre_id = g.id group by m.id;"
+	query := "SELECT m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts, array_agg(g.genre_name) from movies m join movie_genre mg on m.id = mg.movie_id join genres g on mg.genre_id = g.id group by m.id"
 	rows, err := u.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,6 @@ func (u *MoviesRepository) AddMovie(ctx context.Context, newDataMovie models.Mov
             return err
         }
 	}
-
 	return nil
 }
 

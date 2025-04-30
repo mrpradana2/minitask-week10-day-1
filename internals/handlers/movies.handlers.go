@@ -31,6 +31,7 @@ func (m *Movieshandler) GetMovies(ctx *gin.Context) {
 	}
 
 	if len(result) == 0 {
+		log.Println(result)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"msg": "movie not found",
 		})
