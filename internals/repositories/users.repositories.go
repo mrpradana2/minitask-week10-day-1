@@ -20,7 +20,7 @@ func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 // Repository add user
 func (u *UserRepository) UserRegister(ctx context.Context, email string, password string, role string) (pgconn.CommandTag, error) {
 	// menambahkan user baru dengan mengembalikan id user baru
-	queryUser := "INSERT INTO users (email, password, role) VALUES ($1, $2, &3) RETURNING id"
+	queryUser := "INSERT INTO users (email, password, role) VALUES ($1, $2, $3) RETURNING id"
 	var userID int
 	err := u.db.QueryRow(ctx, queryUser, email, password, role).Scan(&userID)
 
@@ -37,7 +37,7 @@ func (u *UserRepository) UserRegister(ctx context.Context, email string, passwor
 	point := 0
 	
 	// menambahkan baris baru untuk data profile user baru namun dengan default value
-	queryProfile := "INSERT INTO profile (user_id, first_name, last_name, phone_number, photo_path, title, point) VALUES ($1, $2, $3, $4, $5, $6, $7)"
+	queryProfile := "INSERT INTO profiles (user_id, first_name, last_name, phone_number, photo_path, title, point) VALUES ($1, $2, $3, $4, $5, $6, $7)"
 	cmd, err := u.db.Exec(ctx, queryProfile, userID, first_name, last_name, phone_number, photo_path, title, point)
 	if err != nil {
 		return pgconn.CommandTag{}, err
@@ -59,21 +59,21 @@ func (u *UserRepository) UserLogin(ctx context.Context, auth models.UsersStruct)
 	return result, nil
 }
 
-// Repository get rpofile by id
+// Repository get profile by id
 func (u *UserRepository) GetProfileById(ctx context.Context, idInt int) (models.ProfileStruct, error) {
-	query := "SELECT user_id, phone_number, first_name, last_name, photo_path, title, point FROM profile WHERE user_id = $1"
+	query := "SELECT user_id, first_name, last_name, phone_number, photo_path, title, point FROM profiles WHERE user_id = $1"
 	values := []any{idInt}
 	var result models.ProfileStruct
-	if err := u.db.QueryRow(ctx, query, values...).Scan(&result.User_Id, &result.Phone_number, &result.First_name, &result.Last_name, &result.Photo_path, &result.Title, &result.Point); err != nil {
+	if err := u.db.QueryRow(ctx, query, values...).Scan(&result.User_Id, &result.First_name, &result.Last_name, &result.Phone_number, &result.Photo_path, &result.Title, &result.Point); err != nil {
 		return models.ProfileStruct{}, err
 	}
 	return result, nil
 }
 
 // Repository update profile
-func (u *UserRepository) UpdateProfile(ctx context.Context, updateProfile models.ProfileStruct, idInt int) (pgconn.CommandTag, error) {
-	query := "UPDATE profile SET first_name = $1, last_name = $2, phone_number = $3, photo_path = $4, title = $5, modified_at = $6 WHERE user_id = $7"
-	values := []any{updateProfile.First_name, updateProfile.Last_name, updateProfile.Phone_number, updateProfile.Photo_path, updateProfile.Title, time.Now(), idInt}
+func (u *UserRepository) UpdateProfile(ctx context.Context, updateProfile models.ProfileStruct, idUser int) (pgconn.CommandTag, error) {
+	query := "UPDATE profiles SET first_name = $1, last_name = $2, phone_number = $3, photo_path = $4, title = $5, modified_at = $6 WHERE user_id = $7"
+	values := []any{updateProfile.First_name, updateProfile.Last_name, updateProfile.Phone_number, updateProfile.Photo_path, updateProfile.Title, time.Now(), idUser}
 	cmd, err := u.db.Exec(ctx, query, values...)
 	if err != nil {
 		return pgconn.CommandTag{}, err
