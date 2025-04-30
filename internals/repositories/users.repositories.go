@@ -18,19 +18,27 @@ func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 }
 
 // Repository add user
-func (u *UserRepository) UserRegister(ctx context.Context, newDataUser models.SignupPayload) (pgconn.CommandTag, error) {
+func (u *UserRepository) UserRegister(ctx context.Context, email string, password string, role string) (pgconn.CommandTag, error) {
 	// menambahkan user baru dengan mengembalikan id user baru
-	queryUser := "INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id"
+	queryUser := "INSERT INTO users (email, password, role) VALUES ($1, $2, &3) RETURNING id"
 	var userID int
-	err := u.db.QueryRow(ctx, queryUser, newDataUser.Email, newDataUser.Password).Scan(&userID)
+	err := u.db.QueryRow(ctx, queryUser, email, password, role).Scan(&userID)
 
 	if err != nil {
 		return pgconn.CommandTag{}, err
 	}
 
-	// menambahkan baris baru untuk data profile user baru
-	queryProfile := "INSERT INTO profile (user_id, point, modified_at) VALUES ($1, $2, $3)"
-	cmd, err := u.db.Exec(ctx, queryProfile, userID, 0,time.Now())
+	// default value
+	first_name := ""
+	last_name := ""
+	phone_number := ""
+	photo_path := ""
+	title := ""
+	point := 0
+	
+	// menambahkan baris baru untuk data profile user baru namun dengan default value
+	queryProfile := "INSERT INTO profile (user_id, first_name, last_name, phone_number, photo_path, title, point) VALUES ($1, $2, $3, $4, $5, $6, $7)"
+	cmd, err := u.db.Exec(ctx, queryProfile, userID, first_name, last_name, phone_number, photo_path, title, point)
 	if err != nil {
 		return pgconn.CommandTag{}, err
 	}

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"tikcitz-app/internals/models"
 	"tikcitz-app/internals/repositories"
+	"tikcitz-app/pkg"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,8 +21,11 @@ func NewUsersHandlers(usersRepo *repositories.UserRepository) *UsersHandler {
 
 // handler add user
 func (u *UsersHandler) UserRegister(ctx *gin.Context) {
+	// delkarasi body dari input user
 	newDataUser := models.SignupPayload{}
 
+	// binding data 
+	// mambaca request dari input user dari JSON sekaligus melakukan verifikasi, jika format json tidak sesuai dengan format yang ada didalam struct maka akan terjadi error 
 	if err := ctx.ShouldBindJSON(&newDataUser); err != nil {
 		log.Println("Binding error:", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -30,7 +34,23 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 		return
 	}
 
-	cmd, err := u.usersRepo.UserRegister(ctx.Request.Context(), newDataUser)
+	// hash password, mengkonversi password normal menjadi bentuk lain yang sulit dibaca
+	hash := pkg.InitHashConfig()
+	hash.UseDefaultConfig()
+	hashedPass, err := hash.GenHashedPassword(newDataUser.Password)
+	if err != nil {
+		log.Println(err.Error())
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "hash failed",
+		})
+		return
+	}
+
+	// default value untuk role
+	role := "user"
+
+	// eksekusi fungsi repository register user
+	cmd, err := u.usersRepo.UserRegister(ctx.Request.Context(), newDataUser.Email, hashedPass, role)
 
 	if err != nil {
 		log.Println("[ERROR]:", err)
@@ -38,12 +58,16 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 		return
 	}
 
+	// cek apakah perintah berhasil manambahkan data di database 
 	if cmd.RowsAffected() == 0 {
 		log.Println("Query failed, did not change the data in the database")
+		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"msg": "success",
+	// return jika server berhasil memberikan response
+	ctx.JSON(http.StatusCreated, models.Message{
+		Status: "success",
+		Msg: "successfully create an account",
 	})
 }
 
@@ -59,7 +83,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 		return
 	}
 
-	value := []any{auth.Email, auth.Password}
+	// value := []any{auth.Email, auth.Password}
 
 	result, err := u.usersRepo.UserLogin(ctx.Request.Context(), auth)
 
@@ -70,17 +94,35 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 	}
 
 	// mengecek apakan input dari user sama dengan hasil pencarian user di database
-	var userLogin []models.UsersStruct
-	if value[0] == result.Email && value[1] == result.Password {
-		userLogin = append(userLogin, result)
-	}
+	hash := pkg.InitHashConfig()
+	valid, err := hash.CompareHashAndPassword(result.Password, auth.Password)
 
-	if len(userLogin) == 0 {
-		ctx.JSON(http.StatusNotFound, gin.H{
-			"msg": "incorrect email or password",
+	if err != nil {
+		log.Println(err.Error())
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "terjadi kesalahan server",
 		})
 		return
 	}
+
+	if !valid {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"msg": "incorrect username or password",
+		})
+		return
+	}
+
+	// var userLogin []models.UsersStruct
+	// if value[0] == result.Email && value[1] == result.Password {
+	// 	userLogin = append(userLogin, result)
+	// }
+
+	// if len(userLogin) == 0 {
+	// 	ctx.JSON(http.StatusNotFound, gin.H{
+	// 		"msg": "incorrect email or password",
+	// 	})
+	// 	return
+	// }
 
 	// jika user berhasil login
 	ctx.JSON(http.StatusOK, gin.H{
@@ -100,6 +142,7 @@ func (u *UsersHandler) GetProfileById(ctx *gin.Context) {
 		return
 	}
 
+	// konversi id string menjadi integer
 	idInt, err := strconv.Atoi(idStr)
 
 	if err != nil {
@@ -109,6 +152,7 @@ func (u *UsersHandler) GetProfileById(ctx *gin.Context) {
 		return
 	}
 
+	// eksekusi fungsi repository 
 	result, err := u.usersRepo.GetProfileById(ctx.Request.Context(), idInt)
 
 	if err != nil {
