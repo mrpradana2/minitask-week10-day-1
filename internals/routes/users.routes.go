@@ -2,6 +2,7 @@ package routes
 
 import (
 	"tikcitz-app/internals/handlers"
+	"tikcitz-app/internals/middleware"
 	"tikcitz-app/internals/repositories"
 
 	"github.com/gin-gonic/gin"
@@ -11,16 +12,21 @@ func InitRouterUsers(router *gin.Engine, usersRepo *repositories.UserRepository)
 	routerUsers := router.Group("/users")
 	usersHandler := handlers.NewUsersHandlers(usersRepo)
 
-	// router add user
-	routerUsers.POST("/signup", usersHandler.UserRegister)
+	middleware := middleware.InitMiddleware()
 
-	// router auth user login
+	// router add user (fix)
+	routerUsers.POST("/signup", middleware.VerifyToken, middleware.AcceessGate("admin", "user"), usersHandler.UserRegister)
+
+	// router auth user login (fix)
 	routerUsers.POST("/login", usersHandler.UserLogin)
 
-	// router Get data profile by id
-	routerUsers.GET("/profile/:id", usersHandler.GetProfileById)
+	// router Get data profile by id (fix)
+	routerUsers.GET("/profile/:id", middleware.VerifyToken, middleware.AcceessGate("admin", "user"), usersHandler.GetProfileById)
 
-	// router Update data profile
-	routerUsers.PUT("/profile/:id", usersHandler.UpdateProfile)
+	// router Update data profile (fix)
+	routerUsers.PATCH("/profile/:id", usersHandler.UpdateProfile)
+
+	// // router untuk verify user token
+	// routerUsers.GET("/verify", usersHandler.VerifyToken)
 
 }
