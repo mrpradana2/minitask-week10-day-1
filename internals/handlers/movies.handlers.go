@@ -20,31 +20,39 @@ func NewMovieshandler(moviesRepo *repositories.MoviesRepository) *Movieshandler 
 
 // Handler get all movies
 func (m *Movieshandler) GetMovies(ctx *gin.Context) {
+
+	// manjalankan fungsi repository get movies 
 	result, err := m.moviesRepo.GetMovies(ctx.Request.Context())
 
+	// mengecek jika terjadi error saat mengakses data di server
 	if err != nil {
 		log.Println("[ERROR]", err.Error())
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"msg": "an error occurred on the server",
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "failed",
+			Msg: "an error occurred on the server",
 		})
 		return
 	}
 
+	// mengecek jika data yang diambil dari server kosong
 	if len(result) == 0 {
 		log.Println(result)
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"msg": "movie not found",
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "failed",
+			Msg: "movie not found",
 		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"msg":  "success",
-		"data": result,
+	// menampilkan hasil response jika request berhasil dari server
+	ctx.JSON(http.StatusOK, models.Message{
+		Status: "ok",
+		Msg: "success",
+		Result: result,
 	})
 }
 
-// Handler add movie
+// Handler add movie (fix)
 func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 	// mengambil body json / input admin
 	newDataMovie := models.MoviesStruct{}
