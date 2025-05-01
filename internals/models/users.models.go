@@ -11,8 +11,10 @@ type ProfileStruct struct {
 }
 
 type UsersStruct struct {
+	Id       int    `db:"id,omitempty" json:"id,omitempty"`
 	Email    string `db:"email" json:"email" form:"email"`
 	Password string `db:"password" json:"password" form:"password"`
+	Role     string `db:"role,omitempty" json:"role,omitempty"`
 }
 
 type SignupPayload struct {

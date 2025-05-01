@@ -49,9 +49,9 @@ func (u *UserRepository) UserRegister(ctx context.Context, email string, passwor
 // Repository user login
 func (u *UserRepository) UserLogin(ctx context.Context, auth models.UsersStruct) (models.UsersStruct, error) {
 	// mengambil data user dari DB berdasarkan email
-	query := "SELECT email, password FROM users WHERE email = $1"
+	query := "SELECT id, email, password, role FROM users WHERE email = $1"
 	var result models.UsersStruct
-	err := u.db.QueryRow(ctx, query, auth.Email).Scan(&result.Email, &result.Password)
+	err := u.db.QueryRow(ctx, query, auth.Email).Scan(&result.Id, &result.Email, &result.Password, &result.Role)
 	if err != nil {
 		return models.UsersStruct{}, err
 	}

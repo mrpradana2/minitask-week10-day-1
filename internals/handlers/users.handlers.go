@@ -19,7 +19,7 @@ func NewUsersHandlers(usersRepo *repositories.UserRepository) *UsersHandler {
 	return &UsersHandler{usersRepo: usersRepo}
 }
 
-// handler add user
+// handler add user (fix)
 func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 	// delkarasi body dari input user
 	newDataUser := models.SignupPayload{}
@@ -56,7 +56,7 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 
 	if err != nil {
 		log.Println("[ERROR]:", err)
-		ctx.JSON(http.StatusInternalServerError, models.Message{
+		ctx.JSON(http.StatusConflict, models.Message{
 			Status: "failed",
 			Msg: "user already registered",
 		})
@@ -76,7 +76,7 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 	})
 }
 
-// handler user login
+// handler user login (fix)
 func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 	// mengambil body dari json / input user
 	auth := models.UsersStruct{}
@@ -126,14 +126,27 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 		return
 	}
 
+	// jika berhasil login, maka berikan identitas (jwt)
+	claims := pkg.NewClaims(result.Id, result.Role)
+	token, err := claims.GenerateToken()
+	if err != nil {
+		log.Println(err.Error())
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "failed",
+			Msg: "an error occurred on the server",
+		})
+		return
+	} 
+
 	// jika user berhasil login
 	ctx.JSON(http.StatusOK, models.Message{
 		Status: "success",
 		Msg: "login success",
+		Token: token,
 	})
 }
 
-// handler get profile
+// handler get profile (fix)
 func (u *UsersHandler) GetProfileById(ctx *gin.Context) {
 	// mengambil user id di params
 	idStr, ok := ctx.Params.Get("id")
@@ -165,7 +178,7 @@ func (u *UsersHandler) GetProfileById(ctx *gin.Context) {
 	// error jika profile user tidak ditemukan
 	if err != nil {
 		log.Println("[ERROR] :", err)
-		ctx.JSON(http.StatusInternalServerError, models.Message{
+		ctx.JSON(http.StatusNotFound, models.Message{
 			Status: "failed",
 			Msg: "user not found",
 		})
@@ -180,7 +193,7 @@ func (u *UsersHandler) GetProfileById(ctx *gin.Context) {
 	})
 }
 
-// handler update profile
+// handler update profile (fix)
 func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 	// mengambil data dari body json / input user 
 	var updateProfile models.ProfileStruct
@@ -242,8 +255,58 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 	}
 
 	// menampilkan hasil jika berhasil mengupdate profile
-	ctx.JSON(http.StatusOK, models.Message{
+	ctx.JSON(http.StatusNoContent, models.Message{
 		Status: "success",
 		Msg: "update success",
 	})
 }
+
+// // // handler user auth
+// func (u *UsersHandler) VerifyToken(ctx *gin.Context) {
+// 	// 1. ambil token dari header
+// 	bearerToken := ctx.GetHeader("Authorization")
+
+// 	// cek jika bearerToken kosong
+// 	if bearerToken == "" {
+// 		ctx.JSON(http.StatusUnauthorized, models.Message{
+// 			Status: "failed",
+// 			Msg: "silahkan login terlebih dahulu",
+// 		})
+// 		return
+// 	}
+
+// 	// 2. pisahkan token dari bearer
+// 	token := strings.Split(bearerToken, " ")[1]
+
+// 	if token == "" {
+// 		ctx.JSON(http.StatusUnauthorized, models.Message{
+// 			Status: "failed",
+// 			Msg: "silahkan login terlebih dahulu",
+// 		})
+// 		return
+// 	}
+
+// 	// verifikasi token
+// 	claims := &pkg.Claims{}
+// 	if err := claims.VerifyToken(token); err != nil {
+// 		log.Println(err.Error())
+// 		if err.Error() == "expired token" || err.Error() == "token has invalid claims: token is expired" {
+// 			ctx.JSON(http.StatusUnauthorized, models.Message{
+// 				Status: "failed",
+// 				Msg: "silahkan login kembali",
+// 			})
+// 			return
+// 		}
+// 		ctx.JSON(http.StatusInternalServerError, models.Message{
+// 			Status: "failed",
+// 			Msg: "terjadi kesalahan server",
+// 		})
+// 		return
+// 	}
+
+// 	ctx.JSON(http.StatusOK, models.Message{
+// 		Status: "ok",
+// 		Msg: "success",
+// 		Result: claims,
+// 	})
+// }
