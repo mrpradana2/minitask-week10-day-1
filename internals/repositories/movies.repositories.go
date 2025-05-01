@@ -42,19 +42,20 @@ func (u *MoviesRepository) GetMovies(ctx context.Context) ([]models.MoviesStruct
 // repository add movie
 func (u *MoviesRepository) AddMovie(ctx context.Context, newDataMovie models.MoviesStruct) (error) {
 
-	// menambahakn data movie baru
-	query := "INSERT INTO movies (title, image_path, overview, release_date, director_name, duration, casts, status_movie_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id"
-	values := []any{newDataMovie.Title, newDataMovie.Image_path, newDataMovie.Overview, newDataMovie.Release_date, newDataMovie.Director_name, newDataMovie.Duration, newDataMovie.Casts, newDataMovie.Status_movie_id}
+	// menambahakan data movie baru dengan mereturn kan id movie yang baru dibuat
+	query := "INSERT INTO movies (title, image_path, overview, release_date, director_name, duration) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
+	values := []any{newDataMovie.Title, newDataMovie.Image_path, newDataMovie.Overview, newDataMovie.Release_date, newDataMovie.Director_name, newDataMovie.Duration}
 	var movieId int
 	err := u.db.QueryRow(ctx, query, values...).Scan(&movieId)
 	if err != nil {
 		return err
 	}
 
+	// melakukan looping untuk mengisi data genres
 	for _, genre := range newDataMovie.Genres {
 
 		// menambahkan genre baru jika belum terdaftar
-		queryGenres := "INSERT INTO genres (genre_name) VALUES ($1) ON CONFLICT (genre_name) DO NOTHING"
+		queryGenres := "INSERT INTO genres (name) VALUES ($1) ON CONFLICT (name) DO NOTHING"
 		_, err := u.db.Exec(ctx, queryGenres, genre)
 		if err != nil {
 			return err
@@ -62,18 +63,54 @@ func (u *MoviesRepository) AddMovie(ctx context.Context, newDataMovie models.Mov
 
 		// ambil genre id
 		var genreId int
-		queryGenreId := "SELECT id FROM genres WHERE genre_name = $1"
+		queryGenreId := "SELECT id FROM genres WHERE name = $1"
         err = u.db.QueryRow(ctx, queryGenreId, genre).Scan(&genreId)
         if err != nil {
             return err
         }
 
 		// tambahkan movie id dan genre id ke tabel asosiasi movie_genre
-		queryMovieGenre := "INSERT INTO movie_genre (movie_id, genre_id) VALUES ($1, $2)"
+		queryMovieGenre := "INSERT INTO movie_genres (movie_id, genre_id) VALUES ($1, $2)"
 		_, err = u.db.Exec(ctx, queryMovieGenre, movieId, genreId)
         if err != nil {
             return err
         }
+	}
+
+	for _, cast :=range newDataMovie.Casts {
+		// menambahkan cast baru jika belum ada
+		queryCast := "INSERT INTO casts(name) VALUES($1) ON CONFLICT (name) DO NOTHING"
+		if _, err := u.db.Exec(ctx, queryCast, cast); err != nil {
+			return err
+		}
+
+		// ambil cast id
+		queryGetIdCast := "SELECT id FROM casts WHERE name = $1"
+		var castId int
+		if err = u.db.QueryRow(ctx, queryGetIdCast, cast).Scan(&castId); err != nil {
+            return err
+        }
+
+		// tambahkan cast id dan movie id ke tabel asosiasi movie_casts
+		queryMovieGenre := "INSERT INTO movie_casts (movie_id, cast_id) VALUES ($1, $2)"
+		if _, err = u.db.Exec(ctx, queryMovieGenre, movieId, castId); err != nil {
+            return err
+        }
+	}
+
+	// tambahkan jadwal untuk movie ini
+	// lakukan looping untuk memasukkan jadwal berdasarkan movie yang akan ditampilkan cinema 
+	for _, cinema := range newDataMovie.Cinema_ids {
+
+		// lakukan looping untuk memasukkan jadwal berdasarkan time
+		for _, time := range newDataMovie.Times {
+			queryInsertSchedule := "INSERT INTO schedule (cinema_id, movie_id, location, date, time, price) VALUES ($1, $2, $3, $4, $5, $6)"
+
+			if _, err := u.db.Exec(ctx, queryInsertSchedule, cinema, movieId, newDataMovie.Location, newDataMovie.Date, time, newDataMovie.Price); err != nil {
+				return err
+			}
+
+		}
 	}
 	return nil
 }

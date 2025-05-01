@@ -46,26 +46,37 @@ func (m *Movieshandler) GetMovies(ctx *gin.Context) {
 
 // Handler add movie
 func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
+	// mengambil body json / input admin
 	newDataMovie := models.MoviesStruct{}
 
+	// binding data 
+	// mambaca request dari input user dari JSON sekaligus melakukan verifikasi, jika format json tidak sesuai dengan format yang ada didalam struct maka akan terjadi error 
 	if err := ctx.ShouldBindJSON(&newDataMovie); err != nil {
 		log.Println("Binding error:", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"msg": "invalid data sent",
+		ctx.JSON(http.StatusBadRequest, models.Message{
+			Status: "failed",
+			Msg: "invalid data sent",
 		})
 		return
 	}
 
+	// jalankan fungsi untuk menambahkan data movie
 	err := m.moviesRepo.AddMovie(ctx.Request.Context(), newDataMovie)
 
+	// error jika terjadi masalah saat mengirim data
 	if err != nil {
 		log.Println("[ERROR]:", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occurred on the server"})
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "failed",
+			Msg: "an error occurred on the server",
+		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"msg": "success",
+	// tampilkan pesan success jika data berhasil ditambahkan
+	ctx.JSON(http.StatusCreated, models.Message{
+		Status: "success",
+		Msg: "successfully add data movie",
 	})
 }
 
