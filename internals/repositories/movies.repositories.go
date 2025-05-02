@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"tikcitz-app/internals/models"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -16,10 +17,10 @@ func NewMoviesRepository(db *pgxpool.Pool) *MoviesRepository {
 	return &MoviesRepository{db: db}
 }
 
-// repository get movie all
+// repository get movie all (fix)
 func (u *MoviesRepository) GetMovies(ctx context.Context) ([]models.MoviesStruct, error) {
 
-	// mengambil data movie yang di join dengan table genre
+	// query dengan menggunakan CTE untuk mengambil all movie dan melakukan join dengan tabel movies_genres dan genres untuk mendapatkan genre list, serta dan hasilnya di joinkan dengan tabel movie_casts dan casts untuk mengambil cats list 
 	query := `with table_movie_genres as (select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(g.name) as "genres" from movies m join movie_genres mg on m.id = mg.movie_id join genres g on g.id = mg.genre_id group by m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name) select t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres, array_agg(c.name) from table_movie_genres t join movie_casts mc on t.id = mc.movie_id join casts c on c.id = mc.cast_id group by t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres`
 	rows, err := u.db.Query(ctx, query)
 	if err != nil {
@@ -28,6 +29,8 @@ func (u *MoviesRepository) GetMovies(ctx context.Context) ([]models.MoviesStruct
 
 	defer rows.Close()
 	var result []models.MoviesStruct
+
+	// melakukan loop untuk memasukkan setiap movie ke variable result
 	for rows.Next() {
 		var movies models.MoviesStruct
 		if err := rows.Scan(&movies.Id, &movies.Title, &movies.Release_date, &movies.Overview, &movies.Image_path, &movies.Duration, &movies.Director_name, &movies.Genres, &movies.Casts); err != nil {
@@ -119,17 +122,18 @@ func (u *MoviesRepository) AddMovie(ctx context.Context, newDataMovie models.Mov
 func (u *MoviesRepository) UpdateMovie(ctx context.Context, updateMovie *models.MoviesStruct, idInt int) (pgconn.CommandTag, error) {
 
 	// melakukan update movie berdasarkan id movie
-	query := "UPDATE movies SET title = $1, image_path = $2, overview = $3, release_date = $4, director_name = $5, duration = $6, casts = $7, status_movie_id = $8 WHERE id = $9"
+	query := "update movies set title = $1, image_path = $2, overview = $3, release_date = $4, director_name = $5, duration = $6, modified_at = $7 where id = $8;"
 
-	values := []any{updateMovie.Title, updateMovie.Image_path, updateMovie.Overview, updateMovie.Release_date, updateMovie.Director_name, updateMovie.Duration, updateMovie.Casts, updateMovie.Status_movie_id, idInt}
+	values := []any{updateMovie.Title, updateMovie.Image_path, updateMovie.Overview, updateMovie.Release_date, updateMovie.Director_name, updateMovie.Duration, time.Now(), idInt}
 
 	cmd, err := u.db.Exec(ctx, query, values...)
 	if err != nil {
 		return pgconn.CommandTag{}, err
 	}
 
+	// memperbaharui movie_genres
 	// melakukan delete pada tabel asosiasi movie_genre berdasarkan movie id
-	queryDelMovieGenre := "DELETE FROM movie_genre WHERE movie_id = $1"
+	queryDelMovieGenre := "DELETE FROM movie_genres WHERE movie_id = $1"
 	_, errDelMovieGenre := u.db.Exec(ctx, queryDelMovieGenre, idInt)
 	if errDelMovieGenre != nil {
 		return pgconn.CommandTag{}, nil
@@ -137,7 +141,7 @@ func (u *MoviesRepository) UpdateMovie(ctx context.Context, updateMovie *models.
 
 	for _, genre := range updateMovie.Genres {
 		// menambahkan genre baru jika belum terdaftar
-		queryGenres := "INSERT INTO genres (genre_name) VALUES ($1) ON CONFLICT (genre_name) DO NOTHING"
+		queryGenres := "INSERT INTO genres (name) VALUES ($1) ON CONFLICT (name) DO NOTHING"
 		_, err := u.db.Exec(ctx, queryGenres, genre)
 		if err != nil {
 			return pgconn.CommandTag{}, err
@@ -145,15 +149,47 @@ func (u *MoviesRepository) UpdateMovie(ctx context.Context, updateMovie *models.
 
 		// ambil genre id
 		var genreId int
-		queryGenreId := "SELECT id FROM genres WHERE genre_name = $1"
+		queryGenreId := "SELECT id FROM genres WHERE name = $1"
         err = u.db.QueryRow(ctx, queryGenreId, genre).Scan(&genreId)
         if err != nil {
             return pgconn.CommandTag{}, err
         }
 
 		// tambahkan movie id dan genre id ke tabel asosiasi movie_genre
-		queryMovieGenre := "INSERT INTO movie_genre (movie_id, genre_id) VALUES ($1, $2)"
+		queryMovieGenre := "INSERT INTO movie_genres (movie_id, genre_id) VALUES ($1, $2)"
 		_, err = u.db.Exec(ctx, queryMovieGenre, idInt, genreId)
+        if err != nil {
+            return pgconn.CommandTag{}, err
+        }
+	}
+
+		// memperbarui movie_casts
+		// melakukan delete pada tabel asosiasi movie_casts berdasarkan movie id
+		queryDelMovieCasts := "DELETE FROM movie_casts WHERE movie_id = $1"
+		_, errDelMovieCasts := u.db.Exec(ctx, queryDelMovieCasts, idInt)
+		if errDelMovieCasts != nil {
+			return pgconn.CommandTag{}, nil
+		}
+
+	 	for _, cast := range updateMovie.Casts {
+		// menambahkan genre baru jika belum terdaftar
+		queryGenres := "INSERT INTO casts (name) VALUES ($1) ON CONFLICT (name) DO NOTHING"
+		_, err := u.db.Exec(ctx, queryGenres, cast)
+		if err != nil {
+			return pgconn.CommandTag{}, err
+		}
+
+		// ambil genre id
+		var castId int
+		queryGenreId := "SELECT id FROM casts WHERE name = $1"
+        err = u.db.QueryRow(ctx, queryGenreId, cast).Scan(&castId)
+        if err != nil {
+            return pgconn.CommandTag{}, err
+        }
+
+		// tambahkan movie id dan genre id ke tabel asosiasi movie_genre
+		queryMovieGenre := "INSERT INTO movie_casts (movie_id, cast_id) VALUES ($1, $2)"
+		_, err = u.db.Exec(ctx, queryMovieGenre, idInt, castId)
         if err != nil {
             return pgconn.CommandTag{}, err
         }
@@ -163,13 +199,32 @@ func (u *MoviesRepository) UpdateMovie(ctx context.Context, updateMovie *models.
 }
 
 // repository delete movie
-func (u *MoviesRepository) DeleteMovie(ctx context.Context, idInt int) (pgconn.CommandTag, error) {
+func (u *MoviesRepository) DeleteMovie(ctx context.Context, idInt int) (pgconn.CommandTag, error) { 
+
+	// melakukan delele movie_genres berdasarkan movie_id
+	queryMovieGenres := "DELETE FROM movie_genres WHERE movie_id = $1"
+	_, errMovieGenres := u.db.Exec(ctx, queryMovieGenres, idInt)
+	if errMovieGenres != nil {
+		return pgconn.CommandTag{}, nil
+	}
+
+	// melakukan delete movie_casts berdasarkan movie_id
+	queryMovieCasts := "DELETE FROM movie_casts WHERE movie_id = $1"
+	_, errMovieCasts := u.db.Exec(ctx, queryMovieCasts, idInt)
+	if errMovieCasts != nil {
+		return pgconn.CommandTag{}, nil
+	}
+
+	// melakukan delete schedule berdasarkan movie_id
+	querySchedule := "DELETE FROM schedule WHERE movie_id = $1"
+	_, errSchedule := u.db.Exec(ctx, querySchedule, idInt)
+	if errSchedule != nil {
+		return pgconn.CommandTag{}, nil
+	}
 
 	// melakukan delete movie berdasarkan movie id
-	query := "DELETE FROM movies WHERE id = $1"
-	values := []any{idInt}
-	cmd, err := u.db.Exec(ctx, query, values...)
-
+	queryMovie := "DELETE FROM movies WHERE id = $1"
+	cmd, err := u.db.Exec(ctx, queryMovie, idInt)
 	if err != nil {
 		return pgconn.CommandTag{}, nil
 	}
@@ -224,8 +279,8 @@ func (u *MoviesRepository) GetMoviePopular(ctx context.Context) ([]models.Movies
 // repository get detail movie
 func (u *MoviesRepository) GetDetailMovie(ctx context.Context, movies models.MoviesStruct, IdInt int) ([]models.MoviesStruct, error) {
 
-	// mengambil data movie dan melakukan join dengan tabel asosiasi movie_genre dan tabel genre untuk mengambil genre yang digabung menjadi array berdasarkan id movie 
-	query := "SELECT m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts, array_agg(g.genre_name) FROM movies m JOIN movie_genre mg ON m.id = mg.movie_id JOIN genres g ON mg.genre_id = g.id WHERE m.id = $1 GROUP BY m.id"
+	// query dengan menggunakan CTE untuk mengambil detail movie detail dengan id tertentu dan melakukan join dengan tabel movies_genres dan genres untuk mendapatkan genre list, serta dan hasilnya di joinkan dengan tabel movie_casts dan casts untuk mengambil cats list 
+	query := `with table_movie_genres as (select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(g.name) as "genres" from movies m join movie_genres mg on m.id = mg.movie_id join genres g on g.id = mg.genre_id where m.id = $1 group by m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name) select t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres, array_agg(c.name) from table_movie_genres t join movie_casts mc on t.id = mc.movie_id join casts c on c.id = mc.cast_id group by t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres`
 	values := []any{IdInt}
 	rows, err := u.db.Query(ctx, query, values...)
 	if err != nil {
@@ -234,6 +289,8 @@ func (u *MoviesRepository) GetDetailMovie(ctx context.Context, movies models.Mov
 
 	defer rows.Close()
 	var result []models.MoviesStruct
+
+	// melakukan loop untuk memasukkan setiap movie ke variable result
 	for rows.Next() {
 		var movies models.MoviesStruct
 		if err := rows.Scan(&movies.Id, &movies.Title, &movies.Release_date, &movies.Overview, &movies.Image_path, &movies.Duration, &movies.Director_name, &movies.Casts, &movies.Genres); err != nil {

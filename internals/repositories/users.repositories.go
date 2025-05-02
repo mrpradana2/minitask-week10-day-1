@@ -2,19 +2,23 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
+	"log"
 	"tikcitz-app/internals/models"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 )
 
 type UserRepository struct{
 	db *pgxpool.Pool
+	rdb *redis.Client
 }
 
-func NewUserRepository(db *pgxpool.Pool) *UserRepository {
-	return &UserRepository{db: db}
+func NewUserRepository(db *pgxpool.Pool, rdb *redis.Client) *UserRepository {
+	return &UserRepository{db: db, rdb: rdb}
 }
 
 // Repository add user
@@ -60,20 +64,77 @@ func (u *UserRepository) UserLogin(ctx context.Context, auth models.UsersStruct)
 }
 
 // Repository get profile by id
-func (u *UserRepository) GetProfileById(ctx context.Context, idInt int) (models.ProfileStruct, error) {
-	query := "SELECT user_id, first_name, last_name, phone_number, photo_path, title, point FROM profiles WHERE user_id = $1"
-	values := []any{idInt}
-	var result models.ProfileStruct
-	if err := u.db.QueryRow(ctx, query, values...).Scan(&result.User_Id, &result.First_name, &result.Last_name, &result.Phone_number, &result.Photo_path, &result.Title, &result.Point); err != nil {
-		return models.ProfileStruct{}, err
+func (u *UserRepository) GetProfileById(ctx context.Context, idInt int) ([]models.ProfileStruct, error) {
+	// cek redis terlebih dahulu, jika ada nilainya, maka gunakan nilai dari redis
+	// buat kata kunci untuk di redis 
+	redisKey := "Profile"
+
+	// ambil penyimpanan di redis dengan key yang sudah dibuat
+	cache, err := u.rdb.Get(ctx, redisKey).Result()
+
+	// error handling jika terjadi error: kunci redis tidak ditemukan atau bernilai nil atau redis tidak bekerja
+	if err != nil {
+		if err == redis.Nil {
+			log.Printf("\nkey %s does not exist\n", redisKey)
+		} else {
+			log.Println("Redis not working")
+		}
+	} else {
+		// lakukan parsing data dari redis menjadi bentuk JSON
+		var profile []models.ProfileStruct
+		if err := json.Unmarshal([]byte(cache), &profile); err != nil {
+			return []models.ProfileStruct{}, err
+		}
+
+		// jika berhasil mendapatkan data di redis maka tampilkan hasil dari redis
+		if len(profile) > 0 {
+			return profile, nil
+		}
 	}
+
+	// jika tidak terdapat data di redis maka jalankan query GET profile berikut ini
+	query := "SELECT user_id, first_name, last_name, phone_number, photo_path, title, point FROM profiles WHERE user_id = $1"
+	// values := []any{idInt}
+	rows, err := u.db.Query(ctx, query, idInt)
+	if err != nil {
+		return nil, err
+	}
+	
+	defer rows.Close()
+	var result []models.ProfileStruct
+
+	for rows.Next() {
+		var profile models.ProfileStruct
+		if err := rows.Scan(&profile.User_Id, &profile.First_name, &profile.Last_name, &profile.Phone_number, &profile.Photo_path, &profile.Title, &profile.Point); err != nil {
+			return []models.ProfileStruct{}, err
+		}
+		result = append(result, profile)
+	}
+	
+	// Scan(&result.User_Id, &result.First_name, &result.Last_name, &result.Phone_number, &result.Photo_path, &result.Title, &result.Point); err != nil {
+	// 	return models.ProfileStruct{}, err
+	// }
+
+	// jika berhasil mendapatkan data dari DB maka ambil data tersebut dan masukkan ke dalam redis
+
+	// lakukan parsing dari JSON menjadi bentuk string untuk disimpan kedalam redis
+	res, err := json.Marshal(result)
+	if err != nil {
+		log.Println("DEBUG : ", err.Error())
+	}
+
+	// simpan data yang sudah di parsing menjadi string kedalam redis 
+	if err := u.rdb.Set(ctx, redisKey, string(res), time.Minute*5).Err(); err != nil {
+		log.Println("[DEBUG] redis set", err.Error())
+	}
+	
 	return result, nil
 }
 
 // Repository update profile
-func (u *UserRepository) UpdateProfile(ctx context.Context, updateProfile models.ProfileStruct, idUser int) (pgconn.CommandTag, error) {
+func (u *UserRepository) UpdateProfile(ctx context.Context, idUser int, firstName string, lastName string, phoneNumber string, filePath string, title string) (pgconn.CommandTag, error) {
 	query := "UPDATE profiles SET first_name = $1, last_name = $2, phone_number = $3, photo_path = $4, title = $5, modified_at = $6 WHERE user_id = $7"
-	values := []any{updateProfile.First_name, updateProfile.Last_name, updateProfile.Phone_number, updateProfile.Photo_path, updateProfile.Title, time.Now(), idUser}
+	values := []any{firstName, lastName, phoneNumber, filePath, title, time.Now(), idUser}
 	cmd, err := u.db.Exec(ctx, query, values...)
 	if err != nil {
 		return pgconn.CommandTag{}, err

@@ -1,12 +1,16 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	fp "path/filepath"
 	"strconv"
+	"strings"
 	"tikcitz-app/internals/models"
 	"tikcitz-app/internals/repositories"
 	"tikcitz-app/pkg"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -196,44 +200,112 @@ func (u *UsersHandler) GetProfileById(ctx *gin.Context) {
 // handler update profile (fix)
 func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 	// mengambil data dari body json / input user 
-	var updateProfile models.ProfileStruct
+	// var updateProfile models.ProfileStruct
 
 	// binding data
 	// mambaca request dari input user dari JSON sekaligus melakukan verifikasi, jika format json tidak sesuai dengan format yang ada didalam struct maka akan terjadi error
-	if err := ctx.ShouldBindJSON(&updateProfile); err != nil {
-		log.Println("Binding error:", err)
-		ctx.JSON(http.StatusBadRequest, models.Message{
-			Status: "failed",
-			Msg: "invalid data sent",
-		})
-		return
-	}
+	// if err := ctx.ShouldBindJSON(&updateProfile); err != nil {
+	// 	log.Println("Binding error:", err)
+	// 	ctx.JSON(http.StatusBadRequest, models.Message{
+	// 		Status: "failed",
+	// 		Msg: "invalid data sent",
+	// 	})
+	// 	return
+	// }
 
-	// ambil parameter berdasarkan user id
-	idStr, ok := ctx.Params.Get("id")
+	// // ambil parameter berdasarkan user id
+	// idStr, ok := ctx.Params.Get("id")
 
-	// handling error jika param tidak ada
-	if !ok {
-		ctx.JSON(http.StatusBadRequest, models.Message{
-			Status: "failed",
-			Msg: "param id is needed",
-		})
-		return
-	}
+	// // handling error jika param tidak ada
+	// if !ok {
+	// 	ctx.JSON(http.StatusBadRequest, models.Message{
+	// 		Status: "failed",
+	// 		Msg: "param id is needed",
+	// 	})
+	// 	return
+	// }
 
-	// konversi id string menjadi id integer
-	idInt, err := strconv.Atoi(idStr)
+	// // konversi id string menjadi id integer
+	// idInt, err := strconv.Atoi(idStr)
 
-	if err != nil {
+	// if err != nil {
+	// 	ctx.JSON(http.StatusInternalServerError, models.Message{
+	// 		Status: "failed",
+	// 		Msg: "an error occurred on the server",
+	// 	})
+	// 	return
+	// }
+
+	// handling file
+	// file, err := ctx.FormFile("img")
+	// firstName, _ := ctx.FormFile("first_name")
+	// lastName, _ := ctx.FormFile("last_name")
+	// phoneNumber, _ := ctx.FormFile("phone_number")
+	// title, _ := ctx.FormFile("title")
+	// if err != nil {
+	// 	log.Println(err.Error())
+	// 	ctx.JSON(http.StatusInternalServerError, models.Message{
+	// 		Status: "failed",
+	// 		Msg: "terjadi kesalahan server",
+	// 	})
+	// 	return
+	// }
+
+	var formBody models.ProfileS
+	if err := ctx.ShouldBind(&formBody); err != nil {
+		log.Println(err.Error())
+		if strings.Contains(err.Error(), "Field validation") {
+			if strings.Contains(err.Error(), "failed on the 'contains' tag") {
+				ctx.JSON(http.StatusInternalServerError, models.Message{
+					Status: "failed",
+					Msg: "karakter harus mengandung @",
+				})
+				return
+			}
+			ctx.JSON(http.StatusInternalServerError, models.Message{
+				Status: "failed",
+				Msg: "Ada content yang harus diisi",
+			})
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
-			Msg: "an error occurred on the server",
+			Msg: "terjadi kesalahan server",
+		})
+		return
+	}
+	file := formBody.Photo_path
+	firstName := formBody.First_name
+	lastName := formBody.Last_name
+	phoneNumber := formBody.Phone_number
+	title := formBody.Title
+
+	if file == nil {
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "failed",
+			Msg: "your file is empty",
+		})
+		return
+	}
+
+	// ambil id yang ada di header
+	claims, _ := ctx.Get("Payload")
+	userClaims := claims.(*pkg.Claims)
+	idInt := userClaims.Id
+	ext := fp.Ext(file.Filename)
+	filename := fmt.Sprintf("%d_%d_user_image%s", time.Now().UnixNano(), userClaims.Id, ext)
+	filepath := fp.Join("public", "img", filename)
+	if err := ctx.SaveUploadedFile(file, filepath); err != nil {
+		log.Println(err.Error())
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "failed",
+			Msg: "terjadi kesalahan upload",
 		})
 		return
 	}
 
 	// jalankan fungsi repository untuk update data
-	cmd, err := u.usersRepo.UpdateProfile(ctx.Request.Context(), updateProfile, idInt)
+	cmd, err := u.usersRepo.UpdateProfile(ctx.Request.Context(), idInt, firstName, lastName, phoneNumber, filepath, title)
 
 	if err != nil {
 		log.Println("[ERROR]:", err)
@@ -255,7 +327,7 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 	}
 
 	// menampilkan hasil jika berhasil mengupdate profile
-	ctx.JSON(http.StatusNoContent, models.Message{
+	ctx.JSON(http.StatusOK, models.Message{
 		Status: "success",
 		Msg: "update success",
 	})

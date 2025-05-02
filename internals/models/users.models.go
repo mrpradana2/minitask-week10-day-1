@@ -1,5 +1,7 @@
 package models
 
+import "mime/multipart"
+
 type ProfileStruct struct {
 	User_Id      int    `db:"user_id" json:"user_id" form:"user_id,omitempty"`
 	First_name   string `db:"first_name" json:"first_name" form:"first_name,omitempty"`
@@ -8,6 +10,16 @@ type ProfileStruct struct {
 	Photo_path   string `db:"photo_path" json:"photo_path" form:"photo_path,omitempty"`
 	Title        string `db:"title" json:"title" form:"title,omitempty"`
 	Point        int    `db:"point" json:"point" form:"point,omitempty"`
+}
+
+type ProfileS struct {
+	// User_Id      int      `form:"user_id,omitempty"`
+	First_name   string   `form:"first_name" binding:"required,contains=@"`
+	Last_name    string   `form:"last_name"`
+	Phone_number string   `form:"phone_number"`
+	Photo_path   *multipart.FileHeader `form:"photo_path"`
+	Title        string   `form:"title"`
+	// Point        int      `form:"point,omitempty"`
 }
 
 type UsersStruct struct {

@@ -1,20 +1,24 @@
 package routes
 
 import (
+	"tikcitz-app/internals/middleware"
 	"tikcitz-app/internals/repositories"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 )
 
-func InitRouter(db *pgxpool.Pool) *gin.Engine {
+func InitRouter(db *pgxpool.Pool,rdb *redis.Client) *gin.Engine {
 	router := gin.Default()
 
     moviesRepo := repositories.NewMoviesRepository(db)
-    usersRepo := repositories.NewUserRepository(db)
+    usersRepo := repositories.NewUserRepository(db, rdb)
     scheduleRepo := repositories.NewScheduleRepository(db)
     ordersRepo := repositories.NewOrdersRepository(db)
     seatsRepo := repositories.NewSeatsRepository(db)
+
+    router.Use(middleware.InitMiddleware().CORSMiddleware)
 
 	InitRouterUsers(router, usersRepo)
 	InitRouterMovies(router, moviesRepo)

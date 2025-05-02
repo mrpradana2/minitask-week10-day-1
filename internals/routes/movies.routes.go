@@ -13,14 +13,14 @@ func InitRouterMovies(router *gin.Engine, moviesRepo *repositories.MoviesReposit
 
 	// middleware := middleware.InitMiddleware()
 	
-	// Router get all movie
+	// Router get all movie (fix)
 	routerMovies.GET("", moviesHandler.GetMovies)
 
 	// Router add movie (fix)
 	routerMovies.POST("/add", moviesHandler.AddMovie)
 
 	// Router update movie
-	routerMovies.PUT("/edit/:id", moviesHandler.UpdateMovie)
+	routerMovies.PATCH("/edit/:id", moviesHandler.UpdateMovie)
 
 	// Router delete movie
 	routerMovies.DELETE("/delete/:id", moviesHandler.DeleteMovie)

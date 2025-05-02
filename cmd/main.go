@@ -21,8 +21,16 @@ func main() {
 		log.Println("Closing DB...")
 		db.Close()	
 	}()
-
-    router := routes.InitRouter(db)
+	
+	// var hash pkg.HashConfig
+	// hash.UseDefaultConfig()
+	// password := "kucinggarong"
+	// hashedPassword, _ := hash.GenHashedPassword(password)
+	// log.Println("[DEBUG] password: ", password)
+	// log.Println("[DEBUG] hash: ", hashedPassword)
+	rdb := pkg.RedisConnect()
+    router := routes.InitRouter(db, rdb)
+	router.Static("/img", "./public/img")
 
     router.Run()
 }
