@@ -8,14 +8,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func InitRouterUsers(router *gin.Engine, usersRepo *repositories.UserRepository) {
+func InitRouterUsers(router *gin.Engine, usersRepo *repositories.UserRepository, middleware *middleware.Middleware) {
 	routerUsers := router.Group("/users")
 	usersHandler := handlers.NewUsersHandlers(usersRepo)
 
-	middleware := middleware.InitMiddleware()
+
 
 	// router add user (fix)
-	routerUsers.POST("/signup", middleware.VerifyToken, middleware.AcceessGate("admin", "user"), usersHandler.UserRegister)
+	routerUsers.POST("/signup", usersHandler.UserRegister)
 
 	// router auth user login (fix)
 	routerUsers.POST("/login", usersHandler.UserLogin)

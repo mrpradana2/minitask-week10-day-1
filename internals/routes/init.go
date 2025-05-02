@@ -11,19 +11,19 @@ import (
 
 func InitRouter(db *pgxpool.Pool,rdb *redis.Client) *gin.Engine {
 	router := gin.Default()
+    middleware := middleware.InitMiddleware()
 
     moviesRepo := repositories.NewMoviesRepository(db)
     usersRepo := repositories.NewUserRepository(db, rdb)
     scheduleRepo := repositories.NewScheduleRepository(db)
     ordersRepo := repositories.NewOrdersRepository(db)
     seatsRepo := repositories.NewSeatsRepository(db)
+    router.Use(middleware.CORSMiddleware)
 
-    router.Use(middleware.InitMiddleware().CORSMiddleware)
-
-	InitRouterUsers(router, usersRepo)
+	InitRouterUsers(router, usersRepo, middleware)
 	InitRouterMovies(router, moviesRepo)
     InitRouterSchedule(router, scheduleRepo)
-    InitRouterOrders(router, ordersRepo)
+    InitRouterOrders(router, ordersRepo, middleware)
     InitRouterSeats(router, seatsRepo)
 
 	return router
