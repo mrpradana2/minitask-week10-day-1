@@ -16,7 +16,7 @@ func NewOrdersRepository(db *pgxpool.Pool) *OrdersRepository {
 	return &OrdersRepository{db: db}
 }
 
-// repository create order
+// repository create order (fix)
 func (o *OrdersRepository) CreateOrder(ctx context.Context, order models.OrdersStr, IdInt int) error {
 
 	// insert to table orders and returning id and cinema_id
@@ -69,7 +69,7 @@ func (o *OrdersRepository) CreateOrder(ctx context.Context, order models.OrdersS
 	return nil
 }
 
-// repository get order history user
+// repository get order history user (fix)
 func (o *OrdersRepository) GetOrderHistory(ctx context.Context, IdInt int) ([]models.OrdersStr, error) {
 
 	// mengambil data dari beberapa tabel yang di joinkan (orders, payment_methode, movies, cinemas, order_seats, dan seats) berdasarkan user_id

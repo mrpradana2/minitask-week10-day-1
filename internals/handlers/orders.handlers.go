@@ -18,7 +18,7 @@ func NewOrdersHandler(ordersRepo *repositories.OrdersRepository) *OrdersHandler 
 	return &OrdersHandler{ordersRepo: ordersRepo}
 }
 
-// Handler create order
+// Handler create order (fix)
 func (o *OrdersHandler) CreateOrder(ctx *gin.Context) {
 	// ambil id yang ada di header
 	claims, _ := ctx.Get("Payload")
@@ -68,12 +68,13 @@ func (o *OrdersHandler) CreateOrder(ctx *gin.Context) {
 	// 	return
 	// }
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"msg": "add data successfully", 
+	ctx.JSON(http.StatusOK, models.Message{
+		Status: "ok",
+		Msg: "succes create order",
 	})
 }
 
-// Handler get order history user
+// Handler get order history user (fix)
 func (o *OrdersHandler) GetOrderHistory(ctx *gin.Context) {
 
 	// mengambil data berdasarkan user yang login 
