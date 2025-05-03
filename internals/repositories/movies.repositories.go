@@ -43,11 +43,11 @@ func (u *MoviesRepository) GetMovies(ctx context.Context) ([]models.MoviesStruct
 }
 
 // repository add movie
-func (u *MoviesRepository) AddMovie(ctx context.Context, newDataMovie models.MoviesStruct) (error) {
+func (u *MoviesRepository) AddMovie(ctx context.Context, title, filePath, overview, directorName, location string, releaseDate, date time.Time, times []time.Time, duration, price int, genres, casts []string, cinemaIds []int) (error) {
 
 	// menambahakan data movie baru dengan mereturn kan id movie yang baru dibuat
 	query := "INSERT INTO movies (title, image_path, overview, release_date, director_name, duration) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
-	values := []any{newDataMovie.Title, newDataMovie.Image_path, newDataMovie.Overview, newDataMovie.Release_date, newDataMovie.Director_name, newDataMovie.Duration}
+	values := []any{title, filePath, overview, releaseDate, directorName, duration}
 	var movieId int
 	err := u.db.QueryRow(ctx, query, values...).Scan(&movieId)
 	if err != nil {
@@ -55,7 +55,7 @@ func (u *MoviesRepository) AddMovie(ctx context.Context, newDataMovie models.Mov
 	}
 
 	// melakukan looping untuk mengisi data genres
-	for _, genre := range newDataMovie.Genres {
+	for _, genre := range genres {
 
 		// menambahkan genre baru jika belum terdaftar
 		queryGenres := "INSERT INTO genres (name) VALUES ($1) ON CONFLICT (name) DO NOTHING"
@@ -80,7 +80,7 @@ func (u *MoviesRepository) AddMovie(ctx context.Context, newDataMovie models.Mov
         }
 	}
 
-	for _, cast :=range newDataMovie.Casts {
+	for _, cast :=range casts {
 		// menambahkan cast baru jika belum ada
 		queryCast := "INSERT INTO casts(name) VALUES($1) ON CONFLICT (name) DO NOTHING"
 		if _, err := u.db.Exec(ctx, queryCast, cast); err != nil {
@@ -103,13 +103,13 @@ func (u *MoviesRepository) AddMovie(ctx context.Context, newDataMovie models.Mov
 
 	// tambahkan jadwal untuk movie ini
 	// lakukan looping untuk memasukkan jadwal berdasarkan movie yang akan ditampilkan cinema 
-	for _, cinema := range newDataMovie.Cinema_ids {
+	for _, cinema := range cinemaIds {
 
 		// lakukan looping untuk memasukkan jadwal berdasarkan time
-		for _, time := range newDataMovie.Times {
+		for _, time := range times {
 			queryInsertSchedule := "INSERT INTO schedule (cinema_id, movie_id, location, date, time, price) VALUES ($1, $2, $3, $4, $5, $6)"
 
-			if _, err := u.db.Exec(ctx, queryInsertSchedule, cinema, movieId, newDataMovie.Location, newDataMovie.Date, time, newDataMovie.Price); err != nil {
+			if _, err := u.db.Exec(ctx, queryInsertSchedule, cinema, movieId, location, date, time, price); err != nil {
 				return err
 			}
 
