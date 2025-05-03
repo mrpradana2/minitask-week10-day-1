@@ -93,6 +93,9 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 	date := newDataMovie.Date
 	times := newDataMovie.Times
 	price := newDataMovie.Price
+
+	log.Println("CASTS : ", casts)
+	log.Println("GENRES : ", genres)
 	
 	// jika file bernilai nil maka tampilkan error
 	if file == nil {
@@ -194,7 +197,7 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 	duration := newDataMovie.Duration
 	genres := newDataMovie.Genres
 	casts := newDataMovie.Casts
-	
+	log.Println("hello", genres)
 	// jika file bernilai nil maka tampilkan error
 	if file == nil {
 		ctx.JSON(http.StatusInternalServerError, models.Message{

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"log"
 	"tikcitz-app/internals/models"
 	"time"
 
@@ -33,7 +34,7 @@ func (u *MoviesRepository) GetMovies(ctx context.Context) ([]models.MoviesStruct
 	// melakukan loop untuk memasukkan setiap movie ke variable result
 	for rows.Next() {
 		var movies models.MoviesStruct
-		if err := rows.Scan(&movies.Id, &movies.Title, &movies.Release_date, &movies.Overview, &movies.Image_path, &movies.Duration, &movies.Director_name, &movies.Genres, &movies.Casts); err != nil {
+		if err := rows.Scan(&movies.Id, &movies.Title, &movies.Release_date, &movies.Overview, &movies.Image_movie, &movies.Duration, &movies.Director_name, &movies.Genres, &movies.Casts); err != nil {
 			return nil, err
 		}
 		result = append(result, movies)
@@ -138,8 +139,9 @@ func (u *MoviesRepository) UpdateMovie(ctx context.Context, title, filePath, ove
 	if errDelMovieGenre != nil {
 		return pgconn.CommandTag{}, nil
 	}
-
+	log.Println("GENRESSS : ", genres)
 	for _, genre := range genres {
+		log.Println("[error bro]")
 		// menambahkan genre baru jika belum terdaftar
 		queryGenres := "INSERT INTO genres (name) VALUES ($1) ON CONFLICT (name) DO NOTHING"
 		_, err := u.db.Exec(ctx, queryGenres, genre)
