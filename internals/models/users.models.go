@@ -12,13 +12,13 @@ type ProfileStruct struct {
 	Title        string `db:"title" json:"title" form:"title,omitempty"`
 	Point        int    `db:"point" json:"point" form:"point,omitempty"`
 	NewPassword     string `json:"-" form:"new_password" binding:"min=8"`
-	ComfirmPassword string `json:"-" form:"confirm_password" binding:"min=6"`
+	ComfirmPassword string `json:"-" form:"confirm_password" binding:"min=8"`
 }
 
 type UsersStruct struct {
 	Id       int    `db:"id,omitempty" json:"id,omitempty"`
 	Email    string `db:"email" json:"email" form:"email" binding:"required,email"`
-	Password string `db:"password" json:"password" form:"password"`
+	Password string `db:"password" json:"password" form:"password" binding:"min=8"`
 	Role     string `db:"role,omitempty" json:"role,omitempty"`
 }
 

@@ -49,12 +49,12 @@ func (s *SeatsHandler) GetSeatsAvailable(ctx *gin.Context) {
 		return
 	}
 
-	if len(seats) < 1 {
-		ctx.JSON(http.StatusNotFound, gin.H{
-			"msg": "seats not found",
-		})
-		return
-	}
+	// if len(seats) < 1 {
+	// 	ctx.JSON(http.StatusNotFound, gin.H{
+	// 		"msg": "seats not found",
+	// 	})
+	// 	return
+	// }
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"msg": "success",
