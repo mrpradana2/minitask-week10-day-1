@@ -3,9 +3,9 @@ package handlers
 import (
 	"log"
 	"net/http"
-	"strconv"
 	"tikcitz-app/internals/models"
 	"tikcitz-app/internals/repositories"
+	"tikcitz-app/pkg"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,7 +20,12 @@ func NewOrdersHandler(ordersRepo *repositories.OrdersRepository) *OrdersHandler 
 
 // Handler create order
 func (o *OrdersHandler) CreateOrder(ctx *gin.Context) {
-	var newOrder models.OrdersStruct
+	// ambil id yang ada di header
+	claims, _ := ctx.Get("Payload")
+	userClaims := claims.(*pkg.Claims)
+
+	// buat variable untuk menampung data movie baru dari admin
+	var newOrder models.OrdersStr
 
 	// binding data
 	if err := ctx.ShouldBindJSON(&newOrder); err != nil {
@@ -31,26 +36,26 @@ func (o *OrdersHandler) CreateOrder(ctx *gin.Context) {
 		return
 	}
 
-	idStr, ok := ctx.Params.Get("id")
+	// idStr, ok := ctx.Params.Get("id")
 
-	// handling error jika param tidak ada
-	if !ok {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"msg": "Param id is needed",
-		})
-		return
-	}
+	// // handling error jika param tidak ada
+	// if !ok {
+	// 	ctx.JSON(http.StatusBadRequest, gin.H{
+	// 		"msg": "Param id is needed",
+	// 	})
+	// 	return
+	// }
 
-	idInt, err := strconv.Atoi(idStr)
+	// idInt, err := strconv.Atoi(idStr)
 
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"msg": "an error occurred on the server",
-		})
-		return
-	}
+	// if err != nil {
+	// 	ctx.JSON(http.StatusInternalServerError, gin.H{
+	// 		"msg": "an error occurred on the server",
+	// 	})
+	// 	return
+	// }
 
-	errCreateOrder := o.ordersRepo.CreateOrder(ctx.Request.Context(), newOrder, idInt)
+	errCreateOrder := o.ordersRepo.CreateOrder(ctx.Request.Context(), newOrder, userClaims.Id)
 
 	if errCreateOrder != nil {
 		log.Println("Insert profile error:", errCreateOrder)
@@ -70,44 +75,35 @@ func (o *OrdersHandler) CreateOrder(ctx *gin.Context) {
 
 // Handler get order history user
 func (o *OrdersHandler) GetOrderHistory(ctx *gin.Context) {
-	idStr, ok := ctx.Params.Get("id")
 
-	// handling error jika param tidak ada
-	if !ok {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"msg": "Param id is needed",
-		})
-		return
-	}
-
-	idInt, err := strconv.Atoi(idStr)
-
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"msg": "an error occurred on the server",
-		})
-		return
-	}
-
+	// mengambil data berdasarkan user yang login 
+	claims, _ := ctx.Get("Payload")
+	userClaims := claims.(*pkg.Claims)
+	idInt := userClaims.Id
 	result, err := o.ordersRepo.GetOrderHistory(ctx.Request.Context(), idInt)
 
 	if err != nil {
 		log.Println("[ERROR]: ", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"msg": "an error occured on the server",
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "failed",
+			Msg: "server error",
 		})
 		return
 	}
 
+	// mengecek jika order 0, maka tampilkan error movie not found
 	if len(result) < 1 {
-		ctx.JSON(http.StatusNotFound, gin.H{
-			"msg": "order not found",
+		ctx.JSON(http.StatusNotFound, models.Message{
+			Status: "failed",
+			Msg: "orders not found",
 		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"msg": "success",
-		"data": result,
+	// jika berhasil mengambil data dari server dan ada datanya, maka tampilkan pesan ini
+	ctx.JSON(http.StatusOK, models.Message{
+		Status: "ok",
+		Msg: "success",
+		Result: result,
 	})
 }

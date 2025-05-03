@@ -2,12 +2,13 @@ package routes
 
 import (
 	"tikcitz-app/internals/handlers"
+	"tikcitz-app/internals/middleware"
 	"tikcitz-app/internals/repositories"
 
 	"github.com/gin-gonic/gin"
 )
 
-func InitRouterMovies(router *gin.Engine, moviesRepo *repositories.MoviesRepository) {
+func InitRouterMovies(router *gin.Engine, moviesRepo *repositories.MoviesRepository, middleware *middleware.Middleware) {
 	routerMovies := router.Group("/movies")
 	moviesHandler := handlers.NewMovieshandler(moviesRepo)
 
@@ -17,7 +18,7 @@ func InitRouterMovies(router *gin.Engine, moviesRepo *repositories.MoviesReposit
 	routerMovies.GET("", moviesHandler.GetMovies)
 
 	// Router add movie (fix)
-	routerMovies.POST("/add", moviesHandler.AddMovie)
+	routerMovies.POST("/add", middleware.VerifyToken, middleware.AcceessGate("admin"), moviesHandler.AddMovie)
 
 	// Router update movie
 	routerMovies.PATCH("/edit/:id", moviesHandler.UpdateMovie)

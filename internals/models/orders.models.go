@@ -23,3 +23,22 @@ type OrdersStruct struct {
 	// SeatId []int `json:"seat_id,omitempty" form:"seat_id"`
 	SeatStr []string `json:"seats" form:"seats"`
 }
+
+type OrdersStr struct {
+	Id *int `json:"id,omitempty" form:"id,omitempty"`
+	UserId int `json:"user_id,omitempty" form:"user_id,omitempty"`
+	ScheduleId int `json:"schedule_id,omitempty" form:"schedule_id"`
+	PaymentMethodeId int `json:"payment_methode_id,omitempty" form:"payment_methode_id"`
+	Date time.Time `json:"date" form:"date"`
+	Time time.Time `json:"time" form:"time"`
+	TotalPrice int `json:"total_price" form:"total_price"`
+	FullName string `json:"full_name,omitempty" form:"full_name"`
+	Email string `json:"email,omitempty" form:"email"`
+	PhoneNumber string `json:"phone_number,omitempty" form:"phone_number"`
+	Paid bool `json:"paid" form:"paid"`
+	OrderId int `json:"order_id,omitempty" form:"order_id"`
+	SeatId int `json:"seat_id,omitempty" form:"seat_id,omitempty"`
+	Seats []string `json:"seats" form:"seats"`
+	ImagePath string `json:"image_cinema_path"`
+	Title string `json:"title"`
+}

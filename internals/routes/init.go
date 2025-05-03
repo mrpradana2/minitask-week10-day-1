@@ -21,7 +21,7 @@ func InitRouter(db *pgxpool.Pool,rdb *redis.Client) *gin.Engine {
     router.Use(middleware.CORSMiddleware)
 
 	InitRouterUsers(router, usersRepo, middleware)
-	InitRouterMovies(router, moviesRepo)
+	InitRouterMovies(router, moviesRepo, middleware)
     InitRouterSchedule(router, scheduleRepo)
     InitRouterOrders(router, ordersRepo, middleware)
     InitRouterSeats(router, seatsRepo)
