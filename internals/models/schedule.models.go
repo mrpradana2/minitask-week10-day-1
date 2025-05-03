@@ -3,14 +3,14 @@ package models
 import "time"
 
 type ScheduleStruct struct {
-	Id   int `json:"id"`
-	// Title string `json:"title"`
+	Id   int `json:"movie_id"`
+	Title string `json:"title"`
 	Cinema string `json:"cinema"`
-	Date time.Time	`json:"-"`
+	CinemaPathImage string `json:"cinema_img"`
+	Date time.Time	`json:"date"`
 	Time []time.Time `json:"time"`
-	DateStr string `json:"date"`
-	// TimeStr []string `json:"time"`
-	Price int `json:"price"`
+	DateStr string `json:"datestr"`
 	Location string `json:"location"`
+	Price int `json:"price"`
 }
 
