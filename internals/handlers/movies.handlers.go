@@ -59,10 +59,10 @@ func (m *Movieshandler) GetMovies(ctx *gin.Context) {
 
 // Handler add movie (fix)
 func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
-	// mengambil body json / input admin
-	// newDataMovie := models.MoviesStruct{}
-
+	// siapkan variable movie struct
 	var newDataMovie models.MoviesStruct
+
+	// lakukan binding data jika ada data yang tidak sesuai dengan format, maka akan terjadi error
 	if err := ctx.ShouldBind(&newDataMovie); err != nil {
 		log.Println(err.Error())
 		if strings.Contains(err.Error(), "Field validation") {
@@ -78,6 +78,8 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 		})
 		return
 	}
+
+	// ambil masing masing new data dari form
 	file := newDataMovie.Image_path
 	title := newDataMovie.Title
 	overview := newDataMovie.Overview
@@ -92,6 +94,7 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 	times := newDataMovie.Times
 	price := newDataMovie.Price
 	
+	// jika file bernilai nil maka tampilkan error
 	if file == nil {
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
@@ -114,16 +117,6 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 		})
 		return
 	}
-	// binding data 
-	// mambaca request dari input user dari JSON sekaligus melakukan verifikasi, jika format json tidak sesuai dengan format yang ada didalam struct maka akan terjadi error 
-	// if err := ctx.ShouldBindJSON(&newDataMovie); err != nil {
-	// 	log.Println("Binding error:", err)
-	// 	ctx.JSON(http.StatusBadRequest, models.Message{
-	// 		Status: "error",
-	// 		Msg: "invalid data sent",
-	// 	})
-	// 	return
-	// }
 
 	// jalankan fungsi untuk menambahkan data movie
 	err := m.moviesRepo.AddMovie(ctx.Request.Context(), title, filepath, overview, directorName, location, releaseDate, date, times, duration, price, genres, casts, cinemaIds)
@@ -147,18 +140,18 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 
 // Handler update movie
 func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
-	var updateMovie models.MoviesStruct
+	// var updateMovie models.MoviesStruct
 
 	// binding data
 	// mambaca request dari input user dari JSON sekaligus melakukan verifikasi, jika format json tidak sesuai dengan format yang ada didalam struct maka akan terjadi error 
-	if err := ctx.ShouldBindJSON(&updateMovie); err != nil {
-		log.Println("Binding error:", err)
-		ctx.JSON(http.StatusBadRequest, models.Message{
-			Status: "error",
-			Msg: "invalid data sent",
-		})
-		return
-	}
+	// if err := ctx.ShouldBindJSON(&updateMovie); err != nil {
+	// 	log.Println("Binding error:", err)
+	// 	ctx.JSON(http.StatusBadRequest, models.Message{
+	// 		Status: "error",
+	// 		Msg: "invalid data sent",
+	// 	})
+	// 	return
+	// }
 
 	// mengambil id dari params
 	idStr, ok := ctx.Params.Get("id")
@@ -184,8 +177,62 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 		return
 	}
 
+	// siapkan variable movie struct
+	var newDataMovie models.MoviesStruct
+
+	// lakukan binding data jika ada data yang tidak sesuai dengan format, maka akan terjadi error
+	if err := ctx.ShouldBind(&newDataMovie); err != nil {
+		log.Println(err.Error())
+		if strings.Contains(err.Error(), "Field validation") {
+			ctx.JSON(http.StatusInternalServerError, models.Message{
+				Status: "failed",
+				Msg: "Ada content yang harus diisi",
+			})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "failed",
+			Msg: "terjadi kesalahan serverr",
+		})
+		return
+	}
+
+	// ambil masing masing new data dari form
+	file := newDataMovie.Image_path
+	title := newDataMovie.Title
+	overview := newDataMovie.Overview
+	releaseDate := newDataMovie.Release_date
+	directorName := newDataMovie.Director_name
+	duration := newDataMovie.Duration
+	genres := newDataMovie.Genres
+	casts := newDataMovie.Casts
+	
+	// jika file bernilai nil maka tampilkan error
+	if file == nil {
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "failed",
+			Msg: "your file is empty",
+		})
+		return
+	}
+
+	// ambil id yang ada di header
+	claims, _ := ctx.Get("Payload")
+	userClaims := claims.(*pkg.Claims)
+	ext := fp.Ext(file.Filename)
+	filename := fmt.Sprintf("%d_%d_movie_image%s", time.Now().UnixNano(), userClaims.Id, ext)
+	filepath := fp.Join("public", "img", filename)
+	if err := ctx.SaveUploadedFile(file, filepath); err != nil {
+		log.Println(err.Error())
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "failed",
+			Msg: "terjadi kesalahan upload",
+		})
+		return
+	}
+
 	// menjalankan fungsi repository update movie
-	cmd, err := m.moviesRepo.UpdateMovie(ctx.Request.Context(), &updateMovie, idInt)
+	cmd, err := m.moviesRepo.UpdateMovie(ctx.Request.Context(), title, filepath, overview, directorName, releaseDate, duration, genres, casts, idInt)
 
 	// melakukan handling error jika query gagal
 	if err != nil {

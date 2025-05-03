@@ -119,12 +119,12 @@ func (u *MoviesRepository) AddMovie(ctx context.Context, title, filePath, overvi
 }
 
 // repository update movie
-func (u *MoviesRepository) UpdateMovie(ctx context.Context, updateMovie *models.MoviesStruct, idInt int) (pgconn.CommandTag, error) {
+func (u *MoviesRepository) UpdateMovie(ctx context.Context, title, filePath, overview, directorName string, releaseDate time.Time, duration int, genres, casts []string, idInt int) (pgconn.CommandTag, error) {
 
 	// melakukan update movie berdasarkan id movie
 	query := "update movies set title = $1, image_path = $2, overview = $3, release_date = $4, director_name = $5, duration = $6, modified_at = $7 where id = $8;"
 
-	values := []any{updateMovie.Title, updateMovie.Image_path, updateMovie.Overview, updateMovie.Release_date, updateMovie.Director_name, updateMovie.Duration, time.Now(), idInt}
+	values := []any{title, filePath, overview, releaseDate, directorName, duration, time.Now(), idInt}
 
 	cmd, err := u.db.Exec(ctx, query, values...)
 	if err != nil {
@@ -139,7 +139,7 @@ func (u *MoviesRepository) UpdateMovie(ctx context.Context, updateMovie *models.
 		return pgconn.CommandTag{}, nil
 	}
 
-	for _, genre := range updateMovie.Genres {
+	for _, genre := range genres {
 		// menambahkan genre baru jika belum terdaftar
 		queryGenres := "INSERT INTO genres (name) VALUES ($1) ON CONFLICT (name) DO NOTHING"
 		_, err := u.db.Exec(ctx, queryGenres, genre)
@@ -171,7 +171,7 @@ func (u *MoviesRepository) UpdateMovie(ctx context.Context, updateMovie *models.
 			return pgconn.CommandTag{}, nil
 		}
 
-	 	for _, cast := range updateMovie.Casts {
+	 	for _, cast := range casts {
 		// menambahkan genre baru jika belum terdaftar
 		queryGenres := "INSERT INTO casts (name) VALUES ($1) ON CONFLICT (name) DO NOTHING"
 		_, err := u.db.Exec(ctx, queryGenres, cast)
