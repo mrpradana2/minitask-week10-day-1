@@ -105,7 +105,7 @@ func (u *UserRepository) GetProfileById(ctx context.Context, idInt int) ([]model
 
 	for rows.Next() {
 		var profile models.ProfileStruct
-		if err := rows.Scan(&profile.User_Id, &profile.First_name, &profile.Last_name, &profile.Phone_number, &profile.Photo_path, &profile.Title, &profile.Point); err != nil {
+		if err := rows.Scan(&profile.User_Id, &profile.First_name, &profile.Last_name, &profile.Phone_number, &profile.PhotoPath, &profile.Title, &profile.Point); err != nil {
 			return []models.ProfileStruct{}, err
 		}
 		result = append(result, profile)
@@ -132,7 +132,7 @@ func (u *UserRepository) GetProfileById(ctx context.Context, idInt int) ([]model
 }
 
 // Repository update profile
-func (u *UserRepository) UpdateProfile(ctx context.Context, idUser int, firstName string, lastName string, phoneNumber string, filePath string, title string) (pgconn.CommandTag, error) {
+func (u *UserRepository) UpdateProfile(ctx context.Context, idUser int, firstName, lastName, phoneNumber, filePath, title, password string) (pgconn.CommandTag, error) {
 	query := "UPDATE profiles SET first_name = $1, last_name = $2, phone_number = $3, photo_path = $4, title = $5, modified_at = $6 WHERE user_id = $7"
 	values := []any{firstName, lastName, phoneNumber, filePath, title, time.Now(), idUser}
 	cmd, err := u.db.Exec(ctx, query, values...)
@@ -140,5 +140,10 @@ func (u *UserRepository) UpdateProfile(ctx context.Context, idUser int, firstNam
 		return pgconn.CommandTag{}, err
 	}
 
+	queryNewPassword := "update users set password = $1 where id = $2"
+	if _, err := u.db.Exec(ctx, queryNewPassword, password, idUser); err != nil {
+		return pgconn.CommandTag{}, err
+	}
+	
 	return cmd, nil
 }

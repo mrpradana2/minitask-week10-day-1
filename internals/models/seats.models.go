@@ -7,8 +7,6 @@ type CinemaStruct struct {
 }
 
 type SeatsStruct struct {
-	Id     int    `json:"id"`
-	Seat   string `json:"seat,omitempty"`
-	Sold   bool   `json:"sold,omitempty"`
-	Cinema string `json:"cinema,omitempty"`
+	Id   int    `json:"id"`
+	Seat string `json:"seat,omitempty"`
 }
