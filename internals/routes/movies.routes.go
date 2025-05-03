@@ -24,7 +24,7 @@ func InitRouterMovies(router *gin.Engine, moviesRepo *repositories.MoviesReposit
 	routerMovies.PATCH("/edit/:id", middleware.VerifyToken, middleware.AcceessGate("admin"), moviesHandler.UpdateMovie)
 
 	// Router delete movie
-	routerMovies.DELETE("/delete/:id", moviesHandler.DeleteMovie)
+	routerMovies.DELETE("/delete/:id",  middleware.VerifyToken, middleware.AcceessGate("admin"), moviesHandler.DeleteMovie)
 
 	// router get movie upcoming
 	routerMovies.GET("/moviesupcoming", moviesHandler.GetMoviesUpcoming)

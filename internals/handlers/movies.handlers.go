@@ -140,18 +140,6 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 
 // Handler update movie
 func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
-	// var updateMovie models.MoviesStruct
-
-	// binding data
-	// mambaca request dari input user dari JSON sekaligus melakukan verifikasi, jika format json tidak sesuai dengan format yang ada didalam struct maka akan terjadi error 
-	// if err := ctx.ShouldBindJSON(&updateMovie); err != nil {
-	// 	log.Println("Binding error:", err)
-	// 	ctx.JSON(http.StatusBadRequest, models.Message{
-	// 		Status: "error",
-	// 		Msg: "invalid data sent",
-	// 	})
-	// 	return
-	// }
 
 	// mengambil id dari params
 	idStr, ok := ctx.Params.Get("id")
