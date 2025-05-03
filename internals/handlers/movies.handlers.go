@@ -415,8 +415,9 @@ func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 	pageQ := ctx.Query("page")
 
 	if pageQ == "" {
-		ctx.JSON(http.StatusNotFound, gin.H{
-			"msg": "query page is needed",
+		ctx.JSON(http.StatusNotFound, models.Message{
+			Status: "not found",
+			Msg: "query page is needed",
 		})
 		return
 	}
@@ -424,8 +425,9 @@ func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 	pageQInt, err := strconv.Atoi(pageQ)
 
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"msg": "an error occurred on the server",
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "ok",
+			Msg: "an error occurred on the server",
 		})
 		return
 	}
@@ -437,23 +439,35 @@ func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 		offset = pageQInt * 5 - 5
 	}
 
-	result, err := m.moviesRepo.GetMoviesWithPagination(ctx.Request.Context(), models.MoviesStruct{}, offset)
+	titleQ := ctx.Query("title")
+	genreQ := ctx.Query("genre")
+
+	log.Println("[TITLE] : ", titleQ)
+	log.Println("[GENRE] : ", genreQ)
+
+
+	result, err := m.moviesRepo.GetMoviesWithPagination(ctx.Request.Context(), models.MoviesStruct{}, offset, titleQ, genreQ)
 
 	if err != nil {
 		log.Println("Get Movie error:", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occurred on the server"})
-		return
-	}
-
-	if len(result) < 1 {
-		ctx.JSON(http.StatusNotFound, gin.H{
-			"msg": "movie not found",
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "failed",
+			Msg: "an error occurred on the server",
 		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"msg": "success",
-		"data": result,
+	if len(result) < 1 {
+		ctx.JSON(http.StatusNotFound, models.Message{
+			Status: "not found",
+			Msg: "movie not found",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.Message{
+		Status: "ok",
+		Msg: "success",
+		Result: result,
 	})
 }

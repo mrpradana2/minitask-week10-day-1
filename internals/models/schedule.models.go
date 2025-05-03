@@ -7,9 +7,9 @@ type ScheduleStruct struct {
 	Title string `json:"title"`
 	Cinema string `json:"cinema"`
 	CinemaPathImage string `json:"cinema_img"`
-	Date time.Time	`json:"date"`
+	Date time.Time	`json:"-"`
 	Time []time.Time `json:"time"`
-	DateStr string `json:"datestr"`
+	DateStr string `json:"date"`
 	Location string `json:"location"`
 	Price int `json:"price"`
 }

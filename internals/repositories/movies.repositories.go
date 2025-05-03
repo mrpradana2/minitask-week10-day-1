@@ -326,11 +326,11 @@ func (u *MoviesRepository) GetDetailMovie(ctx context.Context, movies models.Mov
 }
 
 // repository get movie with pagination
-func (u *MoviesRepository) GetMoviesWithPagination(ctx context.Context, movie models.MoviesStruct, offset int) ([]models.MoviesStruct, error) {
+func (u *MoviesRepository) GetMoviesWithPagination(ctx context.Context, movie models.MoviesStruct, offset int, title string, genre string) ([]models.MoviesStruct, error) {
 
 	// mengambil data movies menggunakan paginasi yang di join dengan tabel asosiasi movie_genre dan tabel genres untuk mengambil genre yang gabung menjadi array
-	query := "SELECT m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts, ARRAY_AGG(g.genre_name) FROM movies m JOIN movie_genre mg ON m.id = mg.movie_id JOIN genres g ON mg.genre_id = g.id GROUP BY m.id ORDER BY m.id ASC LIMIT 5 OFFSET $1;"
-	values := []any{offset}
+	query := `with table_movie_pagination as (with table_movie_genres as (select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(g.name) as "genres" from movies m join movie_genres mg on m.id = mg.movie_id join genres g on g.id = mg.genre_id group by m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name) select t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres, array_agg(c.name) from table_movie_genres t join movie_casts mc on t.id = mc.movie_id join casts c on c.id = mc.cast_id group by t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres order by t.id asc limit 5 offset $1) select * from table_movie_pagination where lower(title) like '%' || lower($2) ||'%' and lower(array_to_string(genres, ',')) like '%' || lower($3) || '%'`
+	values := []any{offset, title, genre}
 	rows, err := u.db.Query(ctx, query, values...)
 	if err != nil {
 		return nil, err
@@ -340,7 +340,7 @@ func (u *MoviesRepository) GetMoviesWithPagination(ctx context.Context, movie mo
 	var result []models.MoviesStruct
 	for rows.Next() {
 		var movies models.MoviesStruct
-		if err := rows.Scan(&movies.Id, &movies.Title, &movies.Release_date, &movies.Overview, &movies.Image_path, &movies.Duration, &movies.Director_name, &movies.Casts, &movies.Genres); err != nil {
+		if err := rows.Scan(&movies.Id, &movies.Title, &movies.Release_date, &movies.Overview, &movies.Image_movie, &movies.Duration, &movies.Director_name, &movies.Genres, &movies.Casts); err != nil {
 			return nil, err
 		}
 		result = append(result, movies)

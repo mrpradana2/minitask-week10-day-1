@@ -28,7 +28,7 @@ type ScheduleS struct {
 	Cinema_ids []int `json:"cinema_ids,omitempty" form:"cinema_ids,omitempty"`
 	Movie_id int `json:"movie_id,omitempty" form:"movie_id,omitempty"`
 	Location string	`json:"location,omitempty" form:"location,omitempty"`
-	Date time.Time `json:"date,omitempty" form:"date,omitempty"`
+	Date time.Time `json:"-" form:"date,omitempty"`
 	Times []time.Time `json:"time,omitempty" form:"time,omitempty"`
 	Price int `json:"price,omitempty" form:"price,omitempty"`
 }
