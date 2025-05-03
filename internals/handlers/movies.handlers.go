@@ -410,7 +410,7 @@ func (m *Movieshandler) GetDetailMovie(ctx *gin.Context) {
 	})
 }
 
-// handler get movie with pagination
+// handler get movie with pagination (fix)
 func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 	pageQ := ctx.Query("page")
 

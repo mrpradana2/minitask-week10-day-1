@@ -18,6 +18,7 @@ type MoviesStruct struct {
 	Genres          []string  `json:"genres" form:"genres"`
 	Casts           []string  `json:"casts" form:"casts"`
 	Image_movie string `json:"image_movie"`
+	TotalSales int `json:"total_sales"`
 	Image_path   *multipart.FileHeader `json:"image_path,omitempty" form:"image_path,omitempty"`
 	Status_movie_id int `json:"status_movie_id,omitempty" form:"status_movie_id,omitempty"` //hapus nanti
 	Status_movie string `json:"status_movie,omitempty" form:"status_movie,omitempty"` //hapus nanti

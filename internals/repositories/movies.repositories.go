@@ -22,7 +22,7 @@ func NewMoviesRepository(db *pgxpool.Pool) *MoviesRepository {
 func (u *MoviesRepository) GetMovies(ctx context.Context) ([]models.MoviesStruct, error) {
 
 	// query dengan menggunakan CTE untuk mengambil all movie dan melakukan join dengan tabel movies_genres dan genres untuk mendapatkan genre list, serta dan hasilnya di joinkan dengan tabel movie_casts dan casts untuk mengambil cats list 
-	query := `with table_movie_genres as (select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(g.name) as "genres" from movies m join movie_genres mg on m.id = mg.movie_id join genres g on g.id = mg.genre_id group by m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name) select t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres, array_agg(c.name) from table_movie_genres t join movie_casts mc on t.id = mc.movie_id join casts c on c.id = mc.cast_id group by t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres order by t.id asc`
+	query := `select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(distinct g.name) as "genres", array_agg(distinct c.name) from movies m join movie_genres mg on mg.movie_id = m.id join genres g on mg.genre_id = g.id join movie_casts mc on mc.movie_id = m.id join casts c on c.id = mc.cast_id group by m.id order by m.id asc`
 	rows, err := u.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -238,7 +238,7 @@ func (u *MoviesRepository) DeleteMovie(ctx context.Context, idInt int) (pgconn.C
 func (u *MoviesRepository) GetMovieUpcoming(ctx context.Context) ([]models.MoviesStruct, error) {
 	
 	// query dengan menggunakan CTE untuk mengambil all movie dan melakukan join dengan tabel movies_genres dan genres untuk mendapatkan genre list, serta dan hasilnya di joinkan dengan tabel movie_casts dan casts untuk mengambil cats list 
-	query := `with table_movie_genres as (select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(g.name) as "genres" from movies m join movie_genres mg on m.id = mg.movie_id join genres g on g.id = mg.genre_id where m.release_date > now() group by m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name) select t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres, array_agg(c.name) from table_movie_genres t join movie_casts mc on t.id = mc.movie_id join casts c on c.id = mc.cast_id group by t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres order by t.id asc`
+	query := `select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(distinct g.name) as "genres", array_agg(distinct c.name) from movies m join movie_genres mg on mg.movie_id = m.id join genres g on mg.genre_id = g.id join movie_casts mc on mc.movie_id = m.id join casts c on c.id = mc.cast_id where m.release_date > now() group by m.id order by m.id asc`
 	rows, err := u.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -280,7 +280,7 @@ func (u *MoviesRepository) GetMovieUpcoming(ctx context.Context) ([]models.Movie
 
 // repository get popular movie
 func (u *MoviesRepository) GetMoviePopular(ctx context.Context) ([]models.MoviesStruct, error) {
-	query := "SELECT m.id, m.title, sm.status, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts, ARRAY_AGG(g.genre_name) FROM movies m JOIN status_movie sm ON m.status_movie_id = sm.id JOIN movie_genre mg ON mg.movie_id = m.id JOIN genres g ON g.id = mg.genre_id WHERE status_movie_id = 2 GROUP BY m.id, sm.status"
+	query := `select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(distinct g.name) as "genres", array_agg(distinct c.name) as "casts", COUNT(distinct os.id) as "qty" from orders o join schedule s on o.schedule_id = s.id join movies m on m.id = s.movie_id join order_seats os on os.order_id = o.id join movie_genres mg on mg.movie_id = m.id join genres g on g.id = mg.genre_id join movie_casts mc on mc.movie_id = m.id join casts c on c.id = mc.cast_id group by m.id having COUNT(os.order_id) > 10`
 
 	rows, err := u.db.Query(ctx, query)
 	if err != nil {
@@ -291,7 +291,7 @@ func (u *MoviesRepository) GetMoviePopular(ctx context.Context) ([]models.Movies
 	var result []models.MoviesStruct
 	for rows.Next() {
 		var movies models.MoviesStruct
-		if err := rows.Scan(&movies.Id, &movies.Title, &movies.Status_movie, &movies.Release_date, &movies.Overview, &movies.Image_path, &movies.Duration, &movies.Director_name, &movies.Casts, &movies.Genres); err != nil {
+		if err := rows.Scan(&movies.Id, &movies.Title, &movies.Release_date, &movies.Overview, &movies.Image_movie, &movies.Duration, &movies.Director_name, &movies.Genres, &movies.Casts, &movies.TotalSales); err != nil {
 			return nil, err
 		}
 		result = append(result, movies)
@@ -325,11 +325,11 @@ func (u *MoviesRepository) GetDetailMovie(ctx context.Context, movies models.Mov
 	return result, nil
 }
 
-// repository get movie with pagination
+// repository get movie with pagination (fix)
 func (u *MoviesRepository) GetMoviesWithPagination(ctx context.Context, movie models.MoviesStruct, offset int, title string, genre string) ([]models.MoviesStruct, error) {
 
 	// mengambil data movies menggunakan paginasi yang di join dengan tabel asosiasi movie_genre dan tabel genres untuk mengambil genre yang gabung menjadi array
-	query := `with table_movie_pagination as (with table_movie_genres as (select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(g.name) as "genres" from movies m join movie_genres mg on m.id = mg.movie_id join genres g on g.id = mg.genre_id group by m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name) select t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres, array_agg(c.name) from table_movie_genres t join movie_casts mc on t.id = mc.movie_id join casts c on c.id = mc.cast_id group by t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres order by t.id asc limit 5 offset $1) select * from table_movie_pagination where lower(title) like '%' || lower($2) ||'%' and lower(array_to_string(genres, ',')) like '%' || lower($3) || '%'`
+	query := `select id, title, release_date, overview, image_path, duration, director_name, genres, casts from (select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(distinct g.name) as "genres", array_agg(distinct c.name) as "casts" from movies m join movie_genres mg on mg.movie_id = m.id join genres g on mg.genre_id = g.id join movie_casts mc on mc.movie_id = m.id join casts c on c.id = mc.cast_id group by m.id order by m.id limit 5 offset $1) sq where lower(sq.title) like '%' || lower($2) ||'%' and lower(array_to_string(sq.genres, ',')) like '%' || lower($3) || '%'`
 	values := []any{offset, title, genre}
 	rows, err := u.db.Query(ctx, query, values...)
 	if err != nil {
