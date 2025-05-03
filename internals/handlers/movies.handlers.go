@@ -141,7 +141,7 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 	})
 }
 
-// Handler update movie
+// Handler update movie (fix)
 func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 
 	// mengambil id dari params
@@ -247,7 +247,7 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 	})
 }
 
-// handler delete movie
+// handler delete movie (fix)
 func (m *Movieshandler) DeleteMovie(ctx *gin.Context) {
 	// mendapatkan id dari params
 	idStr, ok := ctx.Params.Get("id")
@@ -301,24 +301,35 @@ func (m *Movieshandler) DeleteMovie(ctx *gin.Context) {
 	})
 }
 
-// handler get movie upcoming
+// handler get movie upcoming  (fix)
 func (m *Movieshandler) GetMoviesUpcoming(ctx *gin.Context) {
+
+	// menjalankan fungsi repository get movie upcoming
 	result, err := m.moviesRepo.GetMovieUpcoming(ctx.Request.Context())
+
+	// mengecek jika terjadi error saat mengakses data di server
 	if err != nil {
 		log.Println("Get Movie error:", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occurred on the server"})
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "ok",
+			Msg: "an error occurred on the server",
+		})
 		return
 	}
 
+	// error handling jika hasil request dari server kosong
 	if len(result) < 1 {
-		ctx.JSON(http.StatusNotFound, gin.H{
-			"msg": "movie not found",
+		ctx.JSON(http.StatusNotFound, models.Message{
+			Status: "ok",
+			Msg: "movie not found",
 		})
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"msg": "success",
-		"data": result,
+	// tampilkan hasil jika berhasil menerima request dari server
+	ctx.JSON(http.StatusOK, models.Message{
+		Status: "ok",
+		Msg: "success",
+		Result: result,
 	})
 }
 
@@ -363,6 +374,7 @@ func (m *Movieshandler) GetDetailMovie(ctx *gin.Context) {
 	idInt, err := strconv.Atoi(idStr)
 
 	if err != nil {
+		log.Println("[BEDUG] : ", err)
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "error",
 			Msg: "an error occurred on the server",

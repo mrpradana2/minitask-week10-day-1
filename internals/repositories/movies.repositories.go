@@ -43,7 +43,7 @@ func (u *MoviesRepository) GetMovies(ctx context.Context) ([]models.MoviesStruct
 	return result, nil
 }
 
-// repository add movie
+// repository add movie (fix)
 func (u *MoviesRepository) AddMovie(ctx context.Context, title, filePath, overview, directorName, location string, releaseDate, date time.Time, times []time.Time, duration, price int, genres, casts []string, cinemaIds []int) (error) {
 
 	// menambahakan data movie baru dengan mereturn kan id movie yang baru dibuat
@@ -119,7 +119,7 @@ func (u *MoviesRepository) AddMovie(ctx context.Context, title, filePath, overvi
 	return nil
 }
 
-// repository update movie
+// repository update movie (fix)
 func (u *MoviesRepository) UpdateMovie(ctx context.Context, title, filePath, overview, directorName string, releaseDate time.Time, duration int, genres, casts []string, idInt int) (pgconn.CommandTag, error) {
 
 	// melakukan update movie berdasarkan id movie
@@ -200,7 +200,7 @@ func (u *MoviesRepository) UpdateMovie(ctx context.Context, title, filePath, ove
 	return cmd, nil
 }
 
-// repository delete movie
+// repository delete movie (fix)
 func (u *MoviesRepository) DeleteMovie(ctx context.Context, idInt int) (pgconn.CommandTag, error) { 
 
 	// melakukan delele movie_genres berdasarkan movie_id
@@ -234,12 +234,11 @@ func (u *MoviesRepository) DeleteMovie(ctx context.Context, idInt int) (pgconn.C
 	return cmd, nil
 }
 
-// repository get upcoming movie
+// repository get upcoming movie (fix)
 func (u *MoviesRepository) GetMovieUpcoming(ctx context.Context) ([]models.MoviesStruct, error) {
-
-	// mengambil data movie 
-	query := "SELECT m.id, m.title, sm.status, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts, ARRAY_AGG(g.genre_name) FROM movies m JOIN status_movie sm ON m.status_movie_id = sm.id JOIN movie_genre mg ON mg.movie_id = m.id JOIN genres g ON g.id = mg.genre_id WHERE status_movie_id = 1 GROUP BY m.id, sm.status"
-
+	
+	// query dengan menggunakan CTE untuk mengambil all movie dan melakukan join dengan tabel movies_genres dan genres untuk mendapatkan genre list, serta dan hasilnya di joinkan dengan tabel movie_casts dan casts untuk mengambil cats list 
+	query := `with table_movie_genres as (select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(g.name) as "genres" from movies m join movie_genres mg on m.id = mg.movie_id join genres g on g.id = mg.genre_id where m.release_date > now() group by m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name) select t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres, array_agg(c.name) from table_movie_genres t join movie_casts mc on t.id = mc.movie_id join casts c on c.id = mc.cast_id group by t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres`
 	rows, err := u.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -247,14 +246,36 @@ func (u *MoviesRepository) GetMovieUpcoming(ctx context.Context) ([]models.Movie
 
 	defer rows.Close()
 	var result []models.MoviesStruct
+
+	// melakukan loop untuk memasukkan setiap movie ke variable result
 	for rows.Next() {
 		var movies models.MoviesStruct
-		if err := rows.Scan(&movies.Id, &movies.Title, &movies.Status_movie, &movies.Release_date, &movies.Overview, &movies.Image_path, &movies.Duration, &movies.Director_name, &movies.Casts, &movies.Genres); err != nil {
+		if err := rows.Scan(&movies.Id, &movies.Title, &movies.Release_date, &movies.Overview, &movies.Image_movie, &movies.Duration, &movies.Director_name, &movies.Genres, &movies.Casts); err != nil {
 			return nil, err
 		}
 		result = append(result, movies)
 	}
+	
 	return result, nil
+
+	// // mengambil data movie 
+	// query := "SELECT m.id, m.title, sm.status, m.release_date, m.overview, m.image_path, m.duration, m.director_name, m.casts, ARRAY_AGG(g.genre_name) FROM movies m JOIN status_movie sm ON m.status_movie_id = sm.id JOIN movie_genre mg ON mg.movie_id = m.id JOIN genres g ON g.id = mg.genre_id WHERE status_movie_id = 1 GROUP BY m.id, sm.status"
+
+	// rows, err := u.db.Query(ctx, query)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// defer rows.Close()
+	// var result []models.MoviesStruct
+	// for rows.Next() {
+	// 	var movies models.MoviesStruct
+	// 	if err := rows.Scan(&movies.Id, &movies.Title, &movies.Status_movie, &movies.Release_date, &movies.Overview, &movies.Image_path, &movies.Duration, &movies.Director_name, &movies.Casts, &movies.Genres); err != nil {
+	// 		return nil, err
+	// 	}
+	// 	result = append(result, movies)
+	// }
+	// return result, nil
 }
 
 // repository get popular movie
@@ -278,13 +299,13 @@ func (u *MoviesRepository) GetMoviePopular(ctx context.Context) ([]models.Movies
 	return result, nil
 }
 
-// repository get detail movie
+// repository get detail movie (fix)
 func (u *MoviesRepository) GetDetailMovie(ctx context.Context, movies models.MoviesStruct, IdInt int) ([]models.MoviesStruct, error) {
 
 	// query dengan menggunakan CTE untuk mengambil detail movie detail dengan id tertentu dan melakukan join dengan tabel movies_genres dan genres untuk mendapatkan genre list, serta dan hasilnya di joinkan dengan tabel movie_casts dan casts untuk mengambil cats list 
 	query := `with table_movie_genres as (select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(g.name) as "genres" from movies m join movie_genres mg on m.id = mg.movie_id join genres g on g.id = mg.genre_id where m.id = $1 group by m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name) select t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres, array_agg(c.name) from table_movie_genres t join movie_casts mc on t.id = mc.movie_id join casts c on c.id = mc.cast_id group by t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres`
-	values := []any{IdInt}
-	rows, err := u.db.Query(ctx, query, values...)
+	// values := []any{IdInt}
+	rows, err := u.db.Query(ctx, query, IdInt)
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +316,7 @@ func (u *MoviesRepository) GetDetailMovie(ctx context.Context, movies models.Mov
 	// melakukan loop untuk memasukkan setiap movie ke variable result
 	for rows.Next() {
 		var movies models.MoviesStruct
-		if err := rows.Scan(&movies.Id, &movies.Title, &movies.Release_date, &movies.Overview, &movies.Image_path, &movies.Duration, &movies.Director_name, &movies.Casts, &movies.Genres); err != nil {
+		if err := rows.Scan(&movies.Id, &movies.Title, &movies.Release_date, &movies.Overview, &movies.Image_movie, &movies.Duration, &movies.Director_name, &movies.Genres, &movies.Casts); err != nil {
 			return nil, err
 		}
 		result = append(result, movies)
