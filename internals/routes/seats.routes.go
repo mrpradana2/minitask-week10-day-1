@@ -12,5 +12,5 @@ func InitRouterSeats(router *gin.Engine, seatsRepo *repositories.SeatsRepository
 	seatsHandler := handlers.NewSeatshandler(seatsRepo)
 
 	// router get seats avaliable
-	routerSeats.GET("", seatsHandler.GetSeatsAvailable)
+	routerSeats.GET("/:id", seatsHandler.GetSeatsAvailable)
 }

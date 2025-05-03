@@ -16,53 +16,27 @@ func NewSeatsRepository(db *pgxpool.Pool) *SeatsRepository {
 }
 
 // repository get available seats
-func (s *SeatsRepository) GetSeatsAvailable(ctx context.Context, cinema models.MoviesStruct, query string) ([]models.SeatsStruct, error) {
+func (s *SeatsRepository) GetSeatsAvailable(ctx context.Context, seat models.SeatsStruct, id int) ([]models.SeatsStruct, error) {
 	
-	// mengambil data cinema di tabel cinema
-	queryGetCinema := "SELECT id, cinema_name, image_path FROM cinemas"
-	rows, errGetcinema := s.db.Query(ctx, queryGetCinema)
-	if errGetcinema != nil {
-		return []models.SeatsStruct{}, errGetcinema
+	// mengambil seat available
+	query := "select s.id, s.kode from seats s where not exists (select s.kode from orders o2 join order_seats os2 on o2.id = os2.order_id where o2.schedule_id = $1 and os2.seat_id = s.id)"
+
+	rows, err := s.db.Query(ctx, query, id)
+	if err != nil {
+		return nil, err
 	}
 
 	defer rows.Close()
-	var findCinema []models.CinemaStruct
+	var result []models.SeatsStruct
+
+	// melakukan loop untuk memasukkan setiap movie ke variable result
 	for rows.Next() {
-		var cinema models.CinemaStruct
-		err := rows.Scan(&cinema.Id, &cinema.Cinema_name, &cinema.Image_path)
-		if err != nil {
-			return []models.SeatsStruct{}, err
-		}
-
-		// mengecek jika cinema_name(dari query) ada dengan data cinema_name di database maka masukkan ke variable findcinema 
-		if cinema.Cinema_name == query {
-			findCinema = append(findCinema, cinema)
-		}
-	}
-
-	if len(findCinema) == 0 {
-		return []models.SeatsStruct{}, nil
-	}
-
-	// mengambil data schedule berdasarkan cinema id dan kursi yang sudah terjual
-	queryGetSeats := "SELECT s.id, s.seat, s.sold, c.cinema_name FROM seats s JOIN schedule s2 ON s.schedule_id = s2.id JOIN cinemas c ON c.id = s2.cinema_id WHERE s2.cinema_id = $1 AND s.sold = false"
-	values := []any{findCinema[0].Id}
-	rowsSeat, errGetSeat := s.db.Query(ctx, queryGetSeats, values...)
-	if errGetSeat != nil {
-		return []models.SeatsStruct{}, errGetSeat
-	}
-	
-	defer rowsSeat.Close()
-	var seats []models.SeatsStruct
-	
-	for rowsSeat.Next() {
 		var seat models.SeatsStruct
-		err := rowsSeat.Scan(&seat.Id, &seat.Seat, &seat.Sold, &seat.Cinema)
-		if err != nil {
-			return []models.SeatsStruct{}, err
+		if err := rows.Scan(&seat.Id, &seat.Seat); err != nil {
+			return nil, err
 		}
-		seats = append(seats, seat)
+		result = append(result, seat)
 	}
-	
-	return seats, nil
+
+	return result, nil
 }
