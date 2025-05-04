@@ -35,7 +35,6 @@ func (s *ScheduleRepository) GetScheduleMovie(ctx context.Context, schedule *mod
 		}
 
 		schedule.DateStr = schedule.Date.Format("2006-01-02")
-		// schedule.TimeStr = schedule.Time.Format("15:04")
 
 		result = append(result, schedule)
 	}

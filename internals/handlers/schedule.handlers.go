@@ -44,6 +44,7 @@ func (s *ScheduleHandler) GetScheduleMovie(ctx *gin.Context) {
 		return
 	}
 
+	// menjalankan fungsi repository getschedulemovie
 	result, err := s.scheduleRepo.GetScheduleMovie(ctx, &models.ScheduleStruct{}, idInt)
 	if err != nil {
 		log.Println("[ERROR]: ", err)
@@ -54,6 +55,7 @@ func (s *ScheduleHandler) GetScheduleMovie(ctx *gin.Context) {
 		return
 	}
 
+	// error handling jika data yang diambil dari server kosong
 	if len(result) < 1 {
 		ctx.JSON(http.StatusNotFound, models.Message{
 			Status: "failed",
@@ -62,6 +64,7 @@ func (s *ScheduleHandler) GetScheduleMovie(ctx *gin.Context) {
 		return
 	}
 
+	// tampilkan hasil response dari server
 	ctx.JSON(http.StatusOK, models.Message{
 		Status: "ok",
 		Msg: "success",

@@ -94,7 +94,6 @@ func (u *UserRepository) GetProfileById(ctx context.Context, idInt int) ([]model
 
 	// jika tidak terdapat data di redis maka jalankan query GET profile berikut ini
 	query := "SELECT user_id, first_name, last_name, phone_number, photo_path, title, point FROM profiles WHERE user_id = $1"
-	// values := []any{idInt}
 	rows, err := u.db.Query(ctx, query, idInt)
 	if err != nil {
 		return nil, err
@@ -110,10 +109,6 @@ func (u *UserRepository) GetProfileById(ctx context.Context, idInt int) ([]model
 		}
 		result = append(result, profile)
 	}
-	
-	// Scan(&result.User_Id, &result.First_name, &result.Last_name, &result.Phone_number, &result.Photo_path, &result.Title, &result.Point); err != nil {
-	// 	return models.ProfileStruct{}, err
-	// }
 
 	// jika berhasil mendapatkan data dari DB maka ambil data tersebut dan masukkan ke dalam redis
 
@@ -133,6 +128,8 @@ func (u *UserRepository) GetProfileById(ctx context.Context, idInt int) ([]model
 
 // Repository update profile
 func (u *UserRepository) UpdateProfile(ctx context.Context, idUser int, firstName, lastName, phoneNumber, filePath, title, password string) (pgconn.CommandTag, error) {
+
+	// update table profile berdasarkan user_id
 	query := "UPDATE profiles SET first_name = $1, last_name = $2, phone_number = $3, photo_path = $4, title = $5, modified_at = $6 WHERE user_id = $7"
 	values := []any{firstName, lastName, phoneNumber, filePath, title, time.Now(), idUser}
 	cmd, err := u.db.Exec(ctx, query, values...)
@@ -140,6 +137,7 @@ func (u *UserRepository) UpdateProfile(ctx context.Context, idUser int, firstNam
 		return pgconn.CommandTag{}, err
 	}
 
+	// melakukan update password bersadarkan user_id
 	queryNewPassword := "update users set password = $1 where id = $2"
 	if _, err := u.db.Exec(ctx, queryNewPassword, password, idUser); err != nil {
 		return pgconn.CommandTag{}, err

@@ -81,8 +81,11 @@ func (o *OrdersHandler) GetOrderHistory(ctx *gin.Context) {
 	claims, _ := ctx.Get("Payload")
 	userClaims := claims.(*pkg.Claims)
 	idInt := userClaims.Id
+
+	// menjalankan fungsi repository get order history
 	result, err := o.ordersRepo.GetOrderHistory(ctx.Request.Context(), idInt)
 
+	// error handling jika gagal menjalankan query
 	if err != nil {
 		log.Println("[ERROR]: ", err)
 		ctx.JSON(http.StatusInternalServerError, models.Message{

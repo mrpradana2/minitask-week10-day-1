@@ -21,7 +21,7 @@ func NewMoviesRepository(db *pgxpool.Pool) *MoviesRepository {
 // repository get movie all (fix)
 func (u *MoviesRepository) GetMovies(ctx context.Context) ([]models.MoviesStruct, error) {
 
-	// query dengan menggunakan CTE untuk mengambil all movie dan melakukan join dengan tabel movies_genres dan genres untuk mendapatkan genre list, serta dan hasilnya di joinkan dengan tabel movie_casts dan casts untuk mengambil cats list 
+	// mengambil data movies dengan menjoinkan table movies dengan tabel asosiasi movie_genres dan genres untuk mendapatkan genre movie, dan menjoinkan tabel asosiasi movie_casts dan casts untuk mendapatkan data cast, kolom genres dan casts digabungkan dengan array aggregat dan agar tidak duplikat tambahkan distinct 
 	query := `select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(distinct g.name) as "genres", array_agg(distinct c.name) from movies m join movie_genres mg on mg.movie_id = m.id join genres g on mg.genre_id = g.id join movie_casts mc on mc.movie_id = m.id join casts c on c.id = mc.cast_id group by m.id order by m.id asc`
 	rows, err := u.db.Query(ctx, query)
 	if err != nil {
@@ -122,7 +122,7 @@ func (u *MoviesRepository) AddMovie(ctx context.Context, title, filePath, overvi
 // repository update movie (fix)
 func (u *MoviesRepository) UpdateMovie(ctx context.Context, title, filePath, overview, directorName string, releaseDate time.Time, duration int, genres, casts []string, idInt int) (pgconn.CommandTag, error) {
 
-	// melakukan update movie berdasarkan id movie
+	// melakukan update movie berdasarkan id movie 
 	query := "update movies set title = $1, image_path = $2, overview = $3, release_date = $4, director_name = $5, duration = $6, modified_at = $7 where id = $8;"
 
 	values := []any{title, filePath, overview, releaseDate, directorName, duration, time.Now(), idInt}
@@ -237,7 +237,7 @@ func (u *MoviesRepository) DeleteMovie(ctx context.Context, idInt int) (pgconn.C
 // repository get upcoming movie (fix)
 func (u *MoviesRepository) GetMovieUpcoming(ctx context.Context) ([]models.MoviesStruct, error) {
 	
-	// query dengan menggunakan CTE untuk mengambil all movie dan melakukan join dengan tabel movies_genres dan genres untuk mendapatkan genre list, serta dan hasilnya di joinkan dengan tabel movie_casts dan casts untuk mengambil cats list 
+	// mengambil data movies dengan ketentuan release_date harus lebih besar dari pada waktu sekarang
 	query := `select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(distinct g.name) as "genres", array_agg(distinct c.name) from movies m join movie_genres mg on mg.movie_id = m.id join genres g on mg.genre_id = g.id join movie_casts mc on mc.movie_id = m.id join casts c on c.id = mc.cast_id where m.release_date > now() group by m.id order by m.id asc`
 	rows, err := u.db.Query(ctx, query)
 	if err != nil {
@@ -280,6 +280,8 @@ func (u *MoviesRepository) GetMovieUpcoming(ctx context.Context) ([]models.Movie
 
 // repository get popular movie
 func (u *MoviesRepository) GetMoviePopular(ctx context.Context) ([]models.MoviesStruct, error) {
+
+	// mengambil data movies dengan ketentuan jumlah jumlah order dalam tabel orders_seat harus lebih dari 10
 	query := `select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(distinct g.name) as "genres", array_agg(distinct c.name) as "casts", COUNT(distinct os.id) as "qty" from orders o join schedule s on o.schedule_id = s.id join movies m on m.id = s.movie_id join order_seats os on os.order_id = o.id join movie_genres mg on mg.movie_id = m.id join genres g on g.id = mg.genre_id join movie_casts mc on mc.movie_id = m.id join casts c on c.id = mc.cast_id group by m.id having COUNT(os.order_id) > 10`
 
 	rows, err := u.db.Query(ctx, query)
@@ -302,7 +304,7 @@ func (u *MoviesRepository) GetMoviePopular(ctx context.Context) ([]models.Movies
 // repository get detail movie (fix)
 func (u *MoviesRepository) GetDetailMovie(ctx context.Context, movies models.MoviesStruct, IdInt int) ([]models.MoviesStruct, error) {
 
-	// query dengan menggunakan CTE untuk mengambil detail movie detail dengan id tertentu dan melakukan join dengan tabel movies_genres dan genres untuk mendapatkan genre list, serta dan hasilnya di joinkan dengan tabel movie_casts dan casts untuk mengambil cats list 
+	// menambil data movies berdasarkan movie_id
 	query := `with table_movie_genres as (select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(g.name) as "genres" from movies m join movie_genres mg on m.id = mg.movie_id join genres g on g.id = mg.genre_id where m.id = $1 group by m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name) select t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres, array_agg(c.name) from table_movie_genres t join movie_casts mc on t.id = mc.movie_id join casts c on c.id = mc.cast_id group by t.id, t.title, t.release_date, t.overview, t.image_path, t.duration, t.director_name, t.genres`
 	// values := []any{IdInt}
 	rows, err := u.db.Query(ctx, query, IdInt)
@@ -328,7 +330,7 @@ func (u *MoviesRepository) GetDetailMovie(ctx context.Context, movies models.Mov
 // repository get movie with pagination (fix)
 func (u *MoviesRepository) GetMoviesWithPagination(ctx context.Context, movie models.MoviesStruct, offset int, title string, genre string) ([]models.MoviesStruct, error) {
 
-	// mengambil data movies menggunakan paginasi yang di join dengan tabel asosiasi movie_genre dan tabel genres untuk mengambil genre yang gabung menjadi array
+	// mengambil data movies didalam subquery yang sudah dibatasi menggunakan limit dan offset, dan hasil data movie tersebut dilakukan filter berdasarkan title dan genre movienya
 	query := `select id, title, release_date, overview, image_path, duration, director_name, genres, casts from (select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(distinct g.name) as "genres", array_agg(distinct c.name) as "casts" from movies m join movie_genres mg on mg.movie_id = m.id join genres g on mg.genre_id = g.id join movie_casts mc on mc.movie_id = m.id join casts c on c.id = mc.cast_id group by m.id order by m.id limit 5 offset $1) sq where lower(sq.title) like '%' || lower($2) ||'%' and lower(array_to_string(sq.genres, ',')) like '%' || lower($3) || '%'`
 	values := []any{offset, title, genre}
 	rows, err := u.db.Query(ctx, query, values...)

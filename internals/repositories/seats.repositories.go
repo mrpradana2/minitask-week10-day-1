@@ -19,9 +19,13 @@ func NewSeatsRepository(db *pgxpool.Pool) *SeatsRepository {
 // repository get available seats
 func (s *SeatsRepository) GetSeatsAvailable(ctx context.Context, seat models.SeatsStruct, id int) (models.ResultSeat, error) {
 	
+
 	// mengambil seat available
+	// query mengambil table seats, dengan ketentuan tidak mengambil hasil seat yang terdapat pada sub query
+	// didalam sub query mengambil table orders yang di joinkan dengan table asosiasi order_seats dimana diambil berdasarkan schedule id tertentu dan jika didalam table asosisasi terdapat id yang sama dengan seat id yang berarti kursi tersebut sudah pernah dipesan 
 	query := "select s.id, s.kode from seats s where not exists (select s.kode from orders o2 join order_seats os2 on o2.id = os2.order_id where o2.schedule_id = $1 and os2.seat_id = s.id)"
 
+	// mengambil data hasil query
 	rows, err := s.db.Query(ctx, query, id)
 	if err != nil {
 		return models.ResultSeat{}, err
@@ -39,19 +43,23 @@ func (s *SeatsRepository) GetSeatsAvailable(ctx context.Context, seat models.Sea
 		result = append(result, seat)
 	}
 
+	// mengambil data schedule id, title, cinema, tanggal dan waktu berdasarkan schedule id
 	queryGetSchedule := "select s.id, m.title, c.name, s.date, s.time from schedule s join movies m on s.movie_id = m.id join cinemas c on c.id = s.cinema_id where s.id = $1"
-	var schedule models.ResultSeat
-	if err := s.db.QueryRow(ctx, queryGetSchedule, id).Scan(&schedule.Id, &schedule.Title, &schedule.Cinema, &schedule.Date, &schedule.Time); err != nil {
+
+	// menyiapkan variable untuk menampung data schedule dan seat available
+	var availableSeat models.ResultSeat
+
+	// menjalankan query row untuk mengakses database untuk mendapatkan data schedule
+	if err := s.db.QueryRow(ctx, queryGetSchedule, id).Scan(&availableSeat.Id, &availableSeat.Title, &availableSeat.Cinema, &availableSeat.Date, &availableSeat.Time); err != nil {
 		return models.ResultSeat{}, err
 	}
 
-	// var hasil models.ResultSeat
-
+	// memasukkan hasil query get available seat kedalam variable availableSeat 
 	for _, res := range result {
-		schedule.Seats = append(schedule.Seats, res.Seat)
+		availableSeat.Seats = append(availableSeat.Seats, res.Seat)
 	}
 
-	log.Println(schedule)
+	log.Println(availableSeat)
 
-	return schedule, nil
+	return availableSeat, nil
 }

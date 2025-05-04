@@ -17,6 +17,7 @@ func NewSeatshandler(seatsRepo *repositories.SeatsRepository) *SeatsHandler {
 } 
 
 func (s *SeatsHandler) GetSeatsAvailable(ctx *gin.Context) {
+
 	// mendapatkan id dari params
 	idStr, ok := ctx.Params.Get("id")
 
@@ -41,6 +42,7 @@ func (s *SeatsHandler) GetSeatsAvailable(ctx *gin.Context) {
 		return
 	}
 
+	// menjalankan fungsi repository getseatAvailable untuk mengakses data dari server
 	seats, err := s.seatsRepo.GetSeatsAvailable(ctx.Request.Context(), models.SeatsStruct{}, idInt)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -49,13 +51,7 @@ func (s *SeatsHandler) GetSeatsAvailable(ctx *gin.Context) {
 		return
 	}
 
-	// if len(seats) < 1 {
-	// 	ctx.JSON(http.StatusNotFound, gin.H{
-	// 		"msg": "seats not found",
-	// 	})
-	// 	return
-	// }
-
+	// tampilkan hasilnya jika berhasil mendapatkan request dari server
 	ctx.JSON(http.StatusOK, gin.H{
 		"msg": "success",
 		"data": seats,
