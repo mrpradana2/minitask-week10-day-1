@@ -25,7 +25,7 @@ func NewUsersHandlers(usersRepo *repositories.UserRepository) *UsersHandler {
 // handler add user (fix)
 func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 	// deklarasi body dari input user
-	newDataUser := models.SignupPayload{}
+	newDataUser := models.UsersStruct{}
 
 	// binding data 
 	// membaca request dari input user dari JSON sekaligus melakukan verifikasi, jika format json tidak sesuai dengan format yang ada didalam struct maka akan terjadi error 
@@ -145,9 +145,9 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 	// error jika terjadi kesalahan dalam mengakses server
 	if err != nil {
 		log.Println("[ERROR]:", err)
-		ctx.JSON(http.StatusInternalServerError, models.Message{
+		ctx.JSON(http.StatusUnauthorized, models.Message{
 			Status: "failed",
-			Msg: "an error occurred on the server",
+			Msg: "incorrect email or password",
 		})
 		return
 	}

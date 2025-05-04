@@ -18,11 +18,6 @@ type ProfileStruct struct {
 type UsersStruct struct {
 	Id       int    `db:"id,omitempty" json:"id,omitempty"`
 	Email    string `db:"email" json:"email" form:"email" binding:"required,email"`
-	Password string `db:"password" json:"password" form:"password" binding:"min=8"`
+	Password string `db:"password" json:"password" form:"password" binding:"required,min=8"`
 	Role     string `db:"role,omitempty" json:"role,omitempty"`
-}
-
-type SignupPayload struct {
-	UsersStruct
-	ProfileStruct
 }
