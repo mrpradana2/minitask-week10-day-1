@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"net/http"
 	"slices"
 	"tikcitz-app/internals/models"
@@ -30,7 +31,8 @@ func (m *Middleware) AcceessGate(allowedRole ...string) func(*gin.Context) {
 			})
 			return
 		}
-
+		log.Println("ALLOWED ROLE ", allowedRole)
+		log.Println("USER CLAIMS ", userClaims.Role)
 		// cek role yang ada di claims
 		if !slices.Contains(allowedRole, userClaims.Role) {
 			ctx.AbortWithStatusJSON(http.StatusForbidden, models.Message{

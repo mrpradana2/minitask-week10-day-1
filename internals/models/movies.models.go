@@ -17,7 +17,7 @@ type MoviesStruct struct {
 	Genres          []string    `json:"genres" form:"genres"`
 	Casts           []string    `json:"casts" form:"casts"`
 	Image_movie     string      `json:"image_movie"`
-	TotalSales      int         `json:"total_sales"`
+	TotalSales      int         `json:"total_sales,omitempty"`
 	Image_path      *multipart.FileHeader `json:"image_path,omitempty" form:"image_path,omitempty"` 
 	Cinema_ids      []int       `json:"cinema_ids,omitempty" form:"cinema_ids,omitempty"`
 	Movie_id        int         `json:"movie_id,omitempty" form:"movie_id,omitempty"`

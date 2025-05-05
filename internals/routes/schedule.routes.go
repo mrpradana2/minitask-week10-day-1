@@ -13,5 +13,6 @@ func InitRouterSchedule(router *gin.Engine, scheduleRepo *repositories.ScheduleR
 	scheduleHandler := handlers.NewScheduleHandler(scheduleRepo)
 	
 	// router get schedule
+	// id movie
 	routerSchedule.GET("/:id", scheduleHandler.GetScheduleMovie)
 }

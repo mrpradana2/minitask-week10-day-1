@@ -141,7 +141,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 
 	// melakukan eksekusi fungsi repository user login
 	result, err := u.usersRepo.UserLogin(ctx.Request.Context(), auth)
-
+	log.Println("{DEBUGGGG}", result)
 	// error jika terjadi kesalahan dalam mengakses server
 	if err != nil {
 		log.Println("[ERROR]:", err)
@@ -176,6 +176,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 
 	// jika berhasil login, maka berikan identitas (jwt)
 	claims := pkg.NewClaims(result.Id, result.Role)
+	log.Println("[DEBUGGGGING]", claims)
 	token, err := claims.GenerateToken()
 
 	// error jika gagal menghasilkan token
