@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"log"
 	"tikcitz-app/internals/models"
 	"tikcitz-app/internals/utils"
@@ -20,6 +21,17 @@ func NewOrdersRepository(db *pgxpool.Pool) *OrdersRepository {
 // repository create order (fix)
 func (o *OrdersRepository) CreateOrder(ctx context.Context, order models.OrdersStr, IdInt int) error {
 
+	// build dinamic query untuk mengambil seat_id dari table seats 
+	querySelectSeats, seats := utils.GetIdTable("seats", "kode", order.Seats)
+
+	// belum fix
+	// handling error jika seat tidak tersedia
+	log.Println("LEN SEATS TABLE", len(seats), seats)
+	log.Println("LEN ORDER SEATS", len(order.Seats), order.Seats)
+	if len(seats) != len(order.Seats) {
+		return errors.New("the seat you booked is not available")
+	}
+
 	// insert to table orders and returning id and cinema_id
 	query := "insert into orders(user_id, schedule_id, payment_methode_id, date, time, total_price, full_name, email, phone_number, paid) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id" //
 	values := []any{IdInt, order.ScheduleId, order.PaymentMethodeId, order.Date, order.Time, order.TotalPrice, order.FullName, order.Email, order.PhoneNumber, order.Paid}
@@ -36,8 +48,7 @@ func (o *OrdersRepository) CreateOrder(ctx context.Context, order models.OrdersS
 		return err
 	}
 
-	// build dinamic query untuk mengambil seat_id dari table seats 
-	querySelectSeats, seats := utils.GetIdTable("seats", "kode", order.Seats)
+
 
 	// mengeksekusi query select seat_id yang sudah di build
 	rows, err := o.db.Query(ctx, querySelectSeats, seats...)

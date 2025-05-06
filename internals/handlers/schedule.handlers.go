@@ -21,7 +21,7 @@ func NewScheduleHandler(scheduleRepo *repositories.ScheduleRepository) *Schedule
 // handler get schedule
 func (s *ScheduleHandler) GetScheduleMovie(ctx *gin.Context) {
 	// mengambil user id di params
-	idStr, ok := ctx.Params.Get("id")
+	idStr, ok := ctx.Params.Get("movieId")
 
 	// handling error jika param tidak ada
 	if !ok {

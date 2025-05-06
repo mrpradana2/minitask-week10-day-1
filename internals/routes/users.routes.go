@@ -12,8 +12,6 @@ func InitRouterUsers(router *gin.Engine, usersRepo *repositories.UserRepository,
 	routerUsers := router.Group("/users")
 	usersHandler := handlers.NewUsersHandlers(usersRepo)
 
-
-
 	// router add user (fix)
 	routerUsers.POST("/signup", usersHandler.UserRegister)
 

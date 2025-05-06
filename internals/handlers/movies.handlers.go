@@ -23,40 +23,6 @@ func NewMovieshandler(moviesRepo *repositories.MoviesRepository) *Movieshandler 
 	return &Movieshandler{moviesRepo: moviesRepo}
 }
 
-// Handler get all movies (fix)
-func (m *Movieshandler) GetMovies(ctx *gin.Context) {
-
-	// manjalankan fungsi repository get movies 
-	result, err := m.moviesRepo.GetMovies(ctx.Request.Context())
-
-	// mengecek jika terjadi error saat mengakses data di server
-	if err != nil {
-		log.Println("[ERROR]", err.Error())
-		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "error",
-			Msg: "an error occurred on the server",
-		})
-		return
-	}
-
-	// mengecek jika data yang diambil dari server kosong
-	if len(result) == 0 {
-		log.Println(result)
-		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "error",
-			Msg: "movie not found",
-		})
-		return
-	}
-
-	// menampilkan hasil response jika request berhasil dari server
-	ctx.JSON(http.StatusOK, models.Message{
-		Status: "ok",
-		Msg: "success",
-		Result: result,
-	})
-}
-
 // Handler add movie (fix)
 func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 	// siapkan variable movie struct
@@ -413,11 +379,29 @@ func (m *Movieshandler) GetDetailMovie(ctx *gin.Context) {
 // handler get movie with pagination (fix)
 func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 	pageQ := ctx.Query("page")
-
 	if pageQ == "" {
-		ctx.JSON(http.StatusNotFound, models.Message{
-			Status: "not found",
-			Msg: "query page is needed",
+		result, err := m.moviesRepo.GetMovies(ctx.Request.Context())
+		if err != nil {
+			log.Println("Get Movie error:", err)
+			ctx.JSON(http.StatusInternalServerError, models.Message{
+				Status: "failed",
+				Msg: "an error occurred on the server",
+			})
+			return
+		}
+
+		if len(result) < 1 {
+			ctx.JSON(http.StatusNotFound, models.Message{
+				Status: "not found",
+				Msg: "movie not found",
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, models.Message{
+			Status: "ok",
+			Msg: "success",
+			Result: result,
 		})
 		return
 	}
@@ -471,3 +455,37 @@ func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 		Result: result,
 	})
 }
+
+// Handler get all movies (fix)
+// func (m *Movieshandler) GetMovies(ctx *gin.Context) {
+
+// 	// manjalankan fungsi repository get movies 
+// 	result, err := m.moviesRepo.GetMovies(ctx.Request.Context())
+
+// 	// mengecek jika terjadi error saat mengakses data di server
+// 	if err != nil {
+// 		log.Println("[ERROR]", err.Error())
+// 		ctx.JSON(http.StatusInternalServerError, models.Message{
+// 			Status: "error",
+// 			Msg: "an error occurred on the server",
+// 		})
+// 		return
+// 	}
+
+// 	// mengecek jika data yang diambil dari server kosong
+// 	if len(result) == 0 {
+// 		log.Println(result)
+// 		ctx.JSON(http.StatusInternalServerError, models.Message{
+// 			Status: "error",
+// 			Msg: "movie not found",
+// 		})
+// 		return
+// 	}
+
+// 	// menampilkan hasil response jika request berhasil dari server
+// 	ctx.JSON(http.StatusOK, models.Message{
+// 		Status: "ok",
+// 		Msg: "success",
+// 		Result: result,
+// 	})
+// }

@@ -15,16 +15,16 @@ func InitRouterMovies(router *gin.Engine, moviesRepo *repositories.MoviesReposit
 	// middleware := middleware.InitMiddleware()
 	
 	// Router get all movie (fix)
-	routerMovies.GET("", moviesHandler.GetMovies)
+	// routerMovies.GET("", moviesHandler.GetMovies)
 
 	// Router add movie (fix)
-	routerMovies.POST("/add", middleware.VerifyToken, middleware.AcceessGate("admin"), moviesHandler.AddMovie)
+	routerMovies.POST("", middleware.VerifyToken, middleware.AcceessGate("admin"), moviesHandler.AddMovie)
 
 	// Router update movie
-	routerMovies.PATCH("/edit/:id", middleware.VerifyToken, middleware.AcceessGate("admin"), moviesHandler.UpdateMovie)
+	routerMovies.PUT("/:id", middleware.VerifyToken, middleware.AcceessGate("admin"), moviesHandler.UpdateMovie)
 
 	// Router delete movie
-	routerMovies.DELETE("/delete/:id",  middleware.VerifyToken, middleware.AcceessGate("admin"), moviesHandler.DeleteMovie)
+	routerMovies.DELETE("/:id",  middleware.VerifyToken, middleware.AcceessGate("admin"), moviesHandler.DeleteMovie)
 
 	// router get movie upcoming
 	routerMovies.GET("/moviesupcoming", moviesHandler.GetMoviesUpcoming)
@@ -33,8 +33,8 @@ func InitRouterMovies(router *gin.Engine, moviesRepo *repositories.MoviesReposit
 	routerMovies.GET("/moviespopular", moviesHandler.GetMoviesPopular)
 
 	// router get detail movie
-	routerMovies.GET("/detail/:id", moviesHandler.GetDetailMovie)
+	routerMovies.GET("/:id", moviesHandler.GetDetailMovie)
 
 	// router get movie with pagination
-	routerMovies.GET("/page", moviesHandler.GetMoviesWithPagination)
+	routerMovies.GET("", moviesHandler.GetMoviesWithPagination)
 }

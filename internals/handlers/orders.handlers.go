@@ -58,7 +58,7 @@ func (o *OrdersHandler) CreateOrder(ctx *gin.Context) {
 	errCreateOrder := o.ordersRepo.CreateOrder(ctx.Request.Context(), newOrder, userClaims.Id)
 
 	if errCreateOrder != nil {
-		log.Println("Insert profile error:", errCreateOrder)
+		log.Println("[DEBUG] : ", errCreateOrder)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occurred on the server"})
 		return
 	}

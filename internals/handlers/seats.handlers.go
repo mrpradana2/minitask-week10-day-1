@@ -19,7 +19,7 @@ func NewSeatshandler(seatsRepo *repositories.SeatsRepository) *SeatsHandler {
 func (s *SeatsHandler) GetSeatsAvailable(ctx *gin.Context) {
 
 	// mendapatkan id dari params
-	idStr, ok := ctx.Params.Get("id")
+	idStr, ok := ctx.Params.Get("scheduleId")
 
 	// handling error jika param tidak ada
 	if !ok {
