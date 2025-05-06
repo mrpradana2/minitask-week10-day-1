@@ -19,10 +19,10 @@ func InitRouterUsers(router *gin.Engine, usersRepo *repositories.UserRepository,
 	routerUsers.POST("/login", usersHandler.UserLogin)
 
 	// router Get data profile by id (fix)
-	routerUsers.GET("/profile",  middleware.VerifyToken, middleware.AcceessGate("user"), usersHandler.GetProfileById)
+	routerUsers.GET("",  middleware.VerifyToken, middleware.AcceessGate("user"), usersHandler.GetProfileById)
 
 	// router Update data profile (fix)
-	routerUsers.PATCH("/profile", middleware.VerifyToken, middleware.AcceessGate("user"), usersHandler.UpdateProfile)
+	routerUsers.PATCH("", middleware.VerifyToken, middleware.AcceessGate("user"), usersHandler.UpdateProfile)
 
 	// // router untuk verify user token
 	// routerUsers.GET("/verify", usersHandler.VerifyToken)

@@ -89,7 +89,7 @@ func (o *OrdersHandler) GetOrderHistory(ctx *gin.Context) {
 	})
 }
 
-// Handler get order by order_id 
+// Handler get order by order_id (fix)
 func (o *OrdersHandler) GetOrderById(ctx *gin.Context) {
 
 	// mengambil data berdasarkan user yang login 

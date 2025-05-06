@@ -110,6 +110,7 @@ func (o *OrdersRepository) GetOrderHistory(ctx context.Context, IdInt int) ([]mo
 	return result, nil
 }
 
+// repository get order by id (fix)
 func (o *OrdersRepository) GetOrderById(ctx context.Context, userId, orderId int) ([]models.OrdersStr, error) {
 	// mengambil data dari beberapa tabel yang di joinkan (orders, payment_methode, movies, cinemas, order_seats, dan seats) berdasarkan user_id
 	query := "select o.id, m.title, c.image_path, o.date, o.time, o.total_price, o.paid, array_agg(s2.kode) from orders o join schedule s on o.schedule_id = s.id join payment_methode pm on pm.id = o.payment_methode_id join cinemas c on s.cinema_id = c.id join movies m on m.id = s.movie_id join users u on u.id = o.user_id join order_seats os on os.order_id = o.id join seats s2 on s2.id = os.seat_id where u.id = $1 and o.id = $2 group by o.id, c.image_path, m.title, o.date, o.time, o.total_price, o.paid order by o.create_at desc"
