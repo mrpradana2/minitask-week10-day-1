@@ -3,6 +3,7 @@ package handlers
 import (
 	"log"
 	"net/http"
+	"strconv"
 	"tikcitz-app/internals/models"
 	"tikcitz-app/internals/repositories"
 	"tikcitz-app/pkg"
@@ -36,25 +37,6 @@ func (o *OrdersHandler) CreateOrder(ctx *gin.Context) {
 		return
 	}
 
-	// idStr, ok := ctx.Params.Get("id")
-
-	// // handling error jika param tidak ada
-	// if !ok {
-	// 	ctx.JSON(http.StatusBadRequest, gin.H{
-	// 		"msg": "Param id is needed",
-	// 	})
-	// 	return
-	// }
-
-	// idInt, err := strconv.Atoi(idStr)
-
-	// if err != nil {
-	// 	ctx.JSON(http.StatusInternalServerError, gin.H{
-	// 		"msg": "an error occurred on the server",
-	// 	})
-	// 	return
-	// }
-
 	errCreateOrder := o.ordersRepo.CreateOrder(ctx.Request.Context(), newOrder, userClaims.Id)
 
 	if errCreateOrder != nil {
@@ -62,11 +44,6 @@ func (o *OrdersHandler) CreateOrder(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occurred on the server"})
 		return
 	}
-
-	// if cmd.RowsAffected() == 0 {
-	// 	ctx.JSON(http.StatusNotFound, gin.H{"message": "Movie not found"})
-	// 	return
-	// }
 
 	ctx.JSON(http.StatusOK, models.Message{
 		Status: "ok",
@@ -111,3 +88,62 @@ func (o *OrdersHandler) GetOrderHistory(ctx *gin.Context) {
 		Result: result,
 	})
 }
+
+// Handler get order by order_id 
+func (o *OrdersHandler) GetOrderById(ctx *gin.Context) {
+
+	// mengambil data berdasarkan user yang login 
+	claims, _ := ctx.Get("Payload")
+	userClaims := claims.(*pkg.Claims)
+
+	// ambil id param
+	idStr, ok := ctx.Params.Get("orderId")
+
+	// handling error jika param tidak ada
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, models.Message{
+			Status: "error",
+			Msg: "Param id is needed",
+		})
+		return
+	}
+
+	// konversi id string menjadi id integer
+	orderId, err := strconv.Atoi(idStr)
+
+	if err != nil {
+		log.Println("[BEDUG] : ", err)
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "error",
+			Msg: "an error occurred on the server",
+		})
+		return
+	}
+
+	result, err := o.ordersRepo.GetOrderById(ctx.Request.Context(), userClaims.Id, orderId)
+	// error handling jika gagal menjalankan query
+	if err != nil {
+		log.Println("[ERROR]: ", err)
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "failed",
+			Msg: "server error",
+		})
+		return
+	}
+
+	// mengecek jika order 0, maka tampilkan error movie not found
+	if len(result) < 1 {
+		ctx.JSON(http.StatusNotFound, models.Message{
+			Status: "failed",
+			Msg: "orders not found",
+		})
+		return
+	}
+
+	// jika berhasil mengambil data dari server dan ada datanya, maka tampilkan pesan ini
+	ctx.JSON(http.StatusOK, models.Message{
+		Status: "ok",
+		Msg: "success",
+		Result: result,
+	})
+} 

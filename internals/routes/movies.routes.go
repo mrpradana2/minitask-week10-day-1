@@ -12,11 +12,6 @@ func InitRouterMovies(router *gin.Engine, moviesRepo *repositories.MoviesReposit
 	routerMovies := router.Group("/movies")
 	moviesHandler := handlers.NewMovieshandler(moviesRepo)
 
-	// middleware := middleware.InitMiddleware()
-	
-	// Router get all movie (fix)
-	// routerMovies.GET("", moviesHandler.GetMovies)
-
 	// Router add movie (fix)
 	routerMovies.POST("", middleware.VerifyToken, middleware.AcceessGate("admin"), moviesHandler.AddMovie)
 

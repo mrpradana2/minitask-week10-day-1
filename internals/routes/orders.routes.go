@@ -18,5 +18,6 @@ func InitRouterOrders(router *gin.Engine, ordersRepo *repositories.OrdersReposit
 	// router get order history
 	routerOrders.GET("", middleware.VerifyToken, middleware.AcceessGate("user"), ordersHandler.GetOrderHistory)
 
-	// get order by id
+	// router get order by id
+	routerOrders.GET("/:orderId", middleware.VerifyToken, middleware.AcceessGate("user"), ordersHandler.GetOrderById)
 }
