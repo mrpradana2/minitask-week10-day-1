@@ -1,8 +1,6 @@
 tmp/
 .fresh.yaml
 .env
-go.mod
-go.sum
 public/
 migrations/
 *.yml

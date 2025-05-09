@@ -77,7 +77,7 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 	userClaims := claims.(*pkg.Claims)
 	ext := fp.Ext(file.Filename)
 	filename := fmt.Sprintf("%d_%d_movie_image%s", time.Now().UnixNano(), userClaims.Id, ext)
-	filepath := fp.Join("public", "img", filename)
+	filepath := fp.Join("public", "img", "thumbnail", filename)
 	if err := ctx.SaveUploadedFile(file, filepath); err != nil {
 		log.Println(err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
@@ -178,7 +178,7 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 	userClaims := claims.(*pkg.Claims)
 	ext := fp.Ext(file.Filename)
 	filename := fmt.Sprintf("%d_%d_movie_image%s", time.Now().UnixNano(), userClaims.Id, ext)
-	filepath := fp.Join("public", "img", filename)
+	filepath := fp.Join("public", "img", "thumbnail", filename)
 	if err := ctx.SaveUploadedFile(file, filepath); err != nil {
 		log.Println(err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
@@ -304,21 +304,25 @@ func (m *Movieshandler) GetMoviesPopular(ctx *gin.Context) {
 	result, err := m.moviesRepo.GetMoviePopular(ctx.Request.Context())
 	if err != nil {
 		log.Println("Get Movie error:", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occurred on the server"})
-		return
-	}
-
-	if len(result) < 1 {
-		ctx.JSON(http.StatusNotFound, gin.H{
-			"msg": "movie not found",
-			"data": result,
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "server error",
+			Msg: "an error occurred on the server",
 		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"msg": "success",
-		"data": result,
+	if len(result) < 1 {
+		ctx.JSON(http.StatusNotFound, models.Message{
+			Status: "not found",
+			Msg: "movie not found",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.Message{
+		Status: "ok",
+		Msg: "Success",
+		Result: result,
 	})
 }
 

@@ -21,37 +21,35 @@ func NewOrdersRepository(db *pgxpool.Pool) *OrdersRepository {
 // repository create order (fix)
 func (o *OrdersRepository) CreateOrder(ctx context.Context, order models.OrdersStr, IdInt int) error {
 
-	// build dinamic query untuk mengambil seat_id dari table seats 
-	querySelectSeats, seats := utils.GetIdTable("seats", "kode", order.Seats)
-
-	// belum fix
-	// handling error jika seat tidak tersedia
-	log.Println("LEN SEATS TABLE", len(seats), seats)
-	log.Println("LEN ORDER SEATS", len(order.Seats), order.Seats)
-	if len(seats) != len(order.Seats) {
-		return errors.New("the seat you booked is not available")
+	// awali dengan db transaction
+	tx, err := o.db.Begin(ctx)
+	if err != nil {
+		return nil
 	}
+
+	// rollback jika gagal menjalankan transaksi
+	defer tx.Rollback(ctx)
 
 	// insert to table orders and returning id and cinema_id
 	query := "insert into orders(user_id, schedule_id, payment_methode_id, date, time, total_price, full_name, email, phone_number, paid) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id" //
 	values := []any{IdInt, order.ScheduleId, order.PaymentMethodeId, order.Date, order.Time, order.TotalPrice, order.FullName, order.Email, order.PhoneNumber, order.Paid}
 	var orderId int
-	err := o.db.QueryRow(ctx, query, values...).Scan(&orderId)
-	if err != nil {
+	if err := tx.QueryRow(ctx, query, values...).Scan(&orderId); err != nil {
 		return err
 	}
 
 	// berikan poin kepada user yang membeli
 	// update point user di table profiles
 	queryAddPointUser := "UPDATE profiles SET point = point + 50 WHERE user_id = $1"
-	if _, err := o.db.Exec(ctx, queryAddPointUser, IdInt); err != nil {
+	if _, err := tx.Exec(ctx, queryAddPointUser, IdInt); err != nil {
 		return err
 	}
 
-
+	// build dinamic query untuk mengambil seat_id dari table seats 
+	querySelectSeats, seats := utils.GetIdTable("seats", "kode", order.Seats)
 
 	// mengeksekusi query select seat_id yang sudah di build
-	rows, err := o.db.Query(ctx, querySelectSeats, seats...)
+	rows, err := tx.Query(ctx, querySelectSeats, seats...)
 	if err != nil {
 		log.Println(err.Error())
 		return err
@@ -68,6 +66,11 @@ func (o *OrdersRepository) CreateOrder(ctx context.Context, order models.OrdersS
 		idSeats = append(idSeats, idSeat)
 	}
 
+	if len(order.Seats) != len(idSeats) - 1 {
+		return errors.New("kursi yang anda pesan tidak valid")
+	}
+	log.Println("LEN ORDER SEATS : ", order.Seats)
+	log.Println("LEN ID SEATS : ", idSeats)
 	log.Println(idSeats...)
 
 	// menambahkan order_id dan order seat ke table asosiasi order_seats
@@ -77,9 +80,14 @@ func (o *OrdersRepository) CreateOrder(ctx context.Context, order models.OrdersS
 	// mengeksekusi query insert order_seats yang sudah di build
 	log.Println("Query Insert OrderSeats", queryInsertOrderSeats)
 	log.Println("idSeats", idSeats)
-	if _, err := o.db.Exec(ctx, queryInsertOrderSeats, idSeats...); err != nil {
+	if _, err := tx.Exec(ctx, queryInsertOrderSeats, idSeats...); err != nil {
 		return err
 	}
+
+	// jangan lupa commit
+	if err := tx.Commit(ctx); err != nil {
+		return err
+	} 
 
 	return nil
 }

@@ -10,7 +10,7 @@ import (
 
 func (m *Middleware) CORSMiddleware(ctx *gin.Context) {
 	// setup whitlist origin
-	whiteListOrigin := []string{"http://localhost:5172"}
+	whiteListOrigin := []string{"http://localhost:5173"}
 	origin := ctx.GetHeader("Origin")
 
 	// allowedOrigin := ""

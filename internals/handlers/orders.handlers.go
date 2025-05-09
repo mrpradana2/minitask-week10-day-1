@@ -41,7 +41,10 @@ func (o *OrdersHandler) CreateOrder(ctx *gin.Context) {
 
 	if errCreateOrder != nil {
 		log.Println("[DEBUG] : ", errCreateOrder)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "an error occurred on the server"})
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "failed",
+			Msg: "internal server error",
+		})
 		return
 	}
 

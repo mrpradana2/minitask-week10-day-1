@@ -19,7 +19,6 @@ func InitMiddleware() *Middleware {
 func (u *Middleware) VerifyToken(ctx *gin.Context) {
 	// 1. ambil token dari header
 	bearerToken := ctx.GetHeader("Authorization")
-	log.Println("[Bearer TOKEN]", bearerToken)
 	// cek jika bearerToken kosong
 	if bearerToken == "" {
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, models.Message{

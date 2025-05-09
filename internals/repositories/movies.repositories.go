@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"tikcitz-app/internals/models"
+	"tikcitz-app/internals/utils"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -55,52 +56,142 @@ func (u *MoviesRepository) AddMovie(ctx context.Context, title, filePath, overvi
 		return err
 	}
 
-	// melakukan looping untuk mengisi data genres
+	// memasukkan data genre yang belum terdaftar di table genres
+	var genresAny []any
+
 	for _, genre := range genres {
-
-		// menambahkan genre baru jika belum terdaftar
-		queryGenres := "INSERT INTO genres (name) VALUES ($1) ON CONFLICT (name) DO NOTHING"
-		_, err := u.db.Exec(ctx, queryGenres, genre)
-		if err != nil {
-			return err
-		}
-
-		// ambil genre id
-		var genreId int
-		queryGenreId := "SELECT id FROM genres WHERE name = $1"
-        err = u.db.QueryRow(ctx, queryGenreId, genre).Scan(&genreId)
-        if err != nil {
-            return err
-        }
-
-		// tambahkan movie id dan genre id ke tabel asosiasi movie_genre
-		queryMovieGenre := "INSERT INTO movie_genres (movie_id, genre_id) VALUES ($1, $2)"
-		_, err = u.db.Exec(ctx, queryMovieGenre, movieId, genreId)
-        if err != nil {
-            return err
-        }
+		genresAny = append(genresAny, genre)
 	}
 
-	for _, cast :=range casts {
-		// menambahkan cast baru jika belum ada
-		queryCast := "INSERT INTO casts(name) VALUES($1) ON CONFLICT (name) DO NOTHING"
-		if _, err := u.db.Exec(ctx, queryCast, cast); err != nil {
+	queryGenres := utils.AddList("genres", "name", genres)
+	if _, err := u.db.Exec(ctx, queryGenres, genresAny...); err != nil {
+		return err
+	}
+
+	// build dinamic query untuk mengambil genre_id dari table genres 
+	querySelectGenres, genresId := utils.GetIdTable("genres", "id", genres)
+
+	// mengeksekusi query select seat_id yang sudah di build
+	rows, err := u.db.Query(ctx, querySelectGenres, genresId...)
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
+	
+	defer rows.Close()
+
+	idGenres := []any{movieId}
+	for rows.Next() {
+		var idGenre int
+		if err := rows.Scan(&idGenre); err != nil {
 			return err
 		}
-
-		// ambil cast id
-		queryGetIdCast := "SELECT id FROM casts WHERE name = $1"
-		var castId int
-		if err = u.db.QueryRow(ctx, queryGetIdCast, cast).Scan(&castId); err != nil {
-            return err
-        }
-
-		// tambahkan cast id dan movie id ke tabel asosiasi movie_casts
-		queryMovieGenre := "INSERT INTO movie_casts (movie_id, cast_id) VALUES ($1, $2)"
-		if _, err = u.db.Exec(ctx, queryMovieGenre, movieId, castId); err != nil {
-            return err
-        }
+		idGenres = append(idGenres, idGenre)
 	}
+
+	// menambahkan movie_id dan genre seat ke table asosiasi movie_genres
+	// melakukan build untuk query insert movie_genres
+	queryInsertMovieGenres := utils.InsertTableAssoc("movie_genres", "movie_id", "genre_id", idGenres)
+
+	// mengeksekusi query insert movie_genres yang sudah di build
+	log.Println("Query Insert OrderSeats", queryInsertMovieGenres)
+	log.Println("idSeats", idGenres)
+	if _, err := u.db.Exec(ctx, queryInsertMovieGenres, idGenres...); err != nil {
+		return err
+	}
+
+	// =========================================
+
+	// memasukkan data cast yang belum terdaftar di table genres
+	var castsAny []any
+
+	for _, cast := range casts {
+		castsAny = append(castsAny, cast)
+	}
+
+	queryCasts := utils.AddList("casts", "name", casts)
+	if _, err := u.db.Exec(ctx, queryCasts, castsAny...); err != nil {
+		return err
+	}
+
+	// build dinamic query untuk mengambil cast_id dari table casts 
+	querySelectCasts, castsId := utils.GetIdTable("casts", "id", genres)
+
+	// mengeksekusi query select cast_id yang sudah di build
+	rowsCasts, err := u.db.Query(ctx, querySelectCasts, castsId...)
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
+	
+	defer rowsCasts.Close()
+
+	idCasts := []any{movieId}
+	for rowsCasts.Next() {
+		var idCast int
+		if err := rows.Scan(&idCast); err != nil {
+			return err
+		}
+		idCasts = append(idCasts, idCast)
+	}
+
+	// menambahkan movie_id dan cast_id ke table asosiasi movie_casts
+	// melakukan build untuk query insert movie_casts
+	queryInsertMovieCasts := utils.InsertTableAssoc("movie_casts", "movie_id", "cast_id", idGenres)
+
+	// mengeksekusi query insert movie_casts yang sudah di build
+	log.Println("Query Insert OrderSeats", queryInsertMovieCasts)
+	log.Println("idSeats", idCasts)
+	if _, err := u.db.Exec(ctx, queryInsertMovieCasts, idCasts...); err != nil {
+		return err
+	}
+
+	// // melakukan looping untuk mengisi data genres
+	// for _, genre := range genres {
+
+	// 	// menambahkan genre baru jika belum terdaftar
+	// 	// queryGenres := "INSERT INTO genres (name) VALUES ($1) ON CONFLICT (name) DO NOTHING"
+	// 	// _, err := u.db.Exec(ctx, queryGenres, genre)
+	// 	// if err != nil {
+	// 	// 	return err
+	// 	// }
+
+	// 	// ambil genre id
+	// 	var genreId int
+	// 	queryGenreId := "SELECT id FROM genres WHERE name = $1"
+    //     err = u.db.QueryRow(ctx, queryGenreId, genre).Scan(&genreId)
+    //     if err != nil {
+    //         return err
+    //     }
+
+	// 	// tambahkan movie id dan genre id ke tabel asosiasi movie_genre
+	// 	queryMovieGenre := "INSERT INTO movie_genres (movie_id, genre_id) VALUES ($1, $2)"
+	// 	_, err = u.db.Exec(ctx, queryMovieGenre, movieId, genreId)
+    //     if err != nil {
+    //         return err
+    //     }
+	// }
+
+	// for _, cast :=range casts {
+	// 	// menambahkan cast baru jika belum ada
+	// 	queryCast := "INSERT INTO casts(name) VALUES($1) ON CONFLICT (name) DO NOTHING"
+	// 	if _, err := u.db.Exec(ctx, queryCast, cast); err != nil {
+	// 		return err
+	// 	}
+
+	// 	// ambil cast id
+	// 	queryGetIdCast := "SELECT id FROM casts WHERE name = $1"
+	// 	var castId int
+	// 	if err = u.db.QueryRow(ctx, queryGetIdCast, cast).Scan(&castId); err != nil {
+    //         return err
+    //     }
+
+	// 	// tambahkan cast id dan movie id ke tabel asosiasi movie_casts
+	// 	queryMovieGenre := "INSERT INTO movie_casts (movie_id, cast_id) VALUES ($1, $2)"
+	// 	if _, err = u.db.Exec(ctx, queryMovieGenre, movieId, castId); err != nil {
+    //         return err
+    //     }
+	// }
 
 	// tambahkan jadwal untuk movie ini
 	// lakukan looping untuk memasukkan jadwal berdasarkan movie yang akan ditampilkan cinema 
