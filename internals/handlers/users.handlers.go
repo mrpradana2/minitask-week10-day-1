@@ -22,7 +22,17 @@ func NewUsersHandlers(usersRepo *repositories.UserRepository) *UsersHandler {
 	return &UsersHandler{usersRepo: usersRepo}
 }
 
-// handler add user (fix)
+
+// Register
+// @summary					Register user
+// @router					/users/signup [post]
+// @Param        			login body models.UserLogin true "Input email and password"
+// @accept					json
+// @produce					json
+// @failure					500 {object} models.Message
+// @failure					400 {object} models.Message
+// @failure					409 {object} models.Message
+// @success					201 {object} models.Message
 func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 	// deklarasi body dari input user
 	newDataUser := models.UsersStruct{}
@@ -102,7 +112,17 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 	})
 }
 
-// handler user login (fix)
+
+// Login
+// @summary					Login user
+// @router					/users/login [post]
+// @Param        			login body models.UserLogin true "Input email and password"
+// @accept					json
+// @produce					json
+// @failure					500 {object} models.Message
+// @failure					400 {object} models.Message
+// @failure					401 {object} models.Message
+// @success					200 {object} models.Message
 func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 	// mengambil body dari json / input user
 	auth := models.UsersStruct{}
@@ -197,7 +217,15 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 	})
 }
 
-// handler get profile (fix)
+
+// Get Profile
+// @summary					Get profile
+// @router					/users [get]
+// @header					token header string "TOKEN USER LOGIN"
+// @accept					json
+// @produce					json
+// @failure					404 {object} models.Message
+// @success					200 {object} models.Message
 func (u *UsersHandler) GetProfileById(ctx *gin.Context) {
 	// ambil data user yang login
 	claims, _ := ctx.Get("Payload")
@@ -227,38 +255,58 @@ func (u *UsersHandler) GetProfileById(ctx *gin.Context) {
 // handler update profile (fix)
 func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 	// sediakan variabel untuk menapung input dari form
-	var formBody models.ProfileStruct
+	// formBody := models.ProfileStruct{}
+	// if err := ctx.ShouldBindJSON(&formBody); err != nil {
+	// 	log.Println(err.Error())
+	// 	// error yang lainnya
+	// 	log.Println("Binding error:", err)
+	// 	ctx.JSON(http.StatusBadRequest, models.Message{
+	// 		Status: "failed",
+	// 		Msg: "invalid data sent",
+	// 	})
+	// 	return
+	// }
+
 
 	// error jika data yang diinput tidak sesuai
-	if err := ctx.ShouldBind(&formBody); err != nil {
-		log.Println(err.Error())
+	// if err := ctx.ShouldBindJSON(&formBody); err != nil {
+	// 	log.Println(err.Error())
+	// 	ctx.JSON(http.StatusInternalServerError, models.Message{
+	// 		Status: "failed",
+	// 		Msg: "terjadi kesalahan server",
+	// 	})
+	// 	return
+	// }
 
-		// error jika panjang karakter password kurang dari 8 karakter
-		if strings.Contains(err.Error(), "Error:Field validation for 'NewPassword'") {
-			ctx.JSON(http.StatusBadRequest, models.Message{
-				Status: "failed",
-				Msg: "password length must be at least 8 characters",
-			})
-			return
-		}
+	// ambil nilai dari forn yang dikirim user
+	// firstName := formBody.First_name
+	// lastName := formBody.Last_name
+	// phoneNumber := formBody.Phone_number
+	// title := formBody.Title
+	// newPassword := formBody.NewPassword
+	// confirmPassword := formBody.ConfirmPassword
 
-		// jika terjadi error lain 
+	// log.Println("pass", formBody.ConfirmPassword) 
+	// log.Println("psss", formBody.NewPassword)
+	updateProfile := models.ProfileStruct{}
+
+	if err := ctx.ShouldBindJSON(&updateProfile); err != nil {
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
-			Msg: "terjadi kesalahan server",
+			Msg: "invalid data sent",
 		})
 		return
 	}
 
-	// ambil nilai dari forn yang dikirim user
-	file := formBody.Photo_path
-	firstName := formBody.First_name
-	lastName := formBody.Last_name
-	phoneNumber := formBody.Phone_number
-	title := formBody.Title
-	newPassword := formBody.NewPassword
-	confirmPassword := formBody.ComfirmPassword
+	firstName := updateProfile.First_name
+	lastName := updateProfile.Last_name
+	phoneNumber := updateProfile.Phone_number
+	title := updateProfile.Title
+	newPassword := updateProfile.NewPassword
+	confirmPassword := updateProfile.ConfirmPassword
 
+	log.Println("hello", newPassword)
+	log.Println("hello", confirmPassword)
 	// error jika newpassword dan confirm password tidak sama
 	if newPassword != confirmPassword {
 		ctx.JSON(http.StatusBadRequest, models.Message{
@@ -282,6 +330,60 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 		})
 		return
 	}
+
+	// ambil data user yang login
+	claims, _ := ctx.Get("Payload")
+	userClaims := claims.(*pkg.Claims)
+
+	// ambil id user yang login
+	idInt := userClaims.Id
+
+	// jalankan fungsi repository untuk update data
+	cmd, err := u.usersRepo.UpdateProfile(ctx.Request.Context(), idInt, firstName, lastName, phoneNumber, title, hashedPass)
+
+	// error jika gagal mengakses server
+	if err != nil {
+		log.Println("[ERROR]:", err)
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "failed",
+			Msg: "an error occurred on the server",
+		})
+		return
+	}
+
+	// pesan error jika tidak terjadi perubahan pada database atau jika user id tidak ditemukan
+	if cmd.RowsAffected() == 0 {
+		log.Println("Query failed, did not change the data in the database")
+		ctx.JSON(http.StatusNotFound, models.Message{
+			Status: "failed",
+			Msg: "no updated data",
+		})
+		return
+	}
+
+	// menampilkan hasil jika berhasil mengupdate profile
+	ctx.JSON(http.StatusOK, models.Message{
+		Status: "success",
+		Msg: "update success",
+	})
+}
+
+func (u *UsersHandler) UpdatePhotoProfile(ctx *gin.Context) {
+	// sediakan variabel untuk menapung input dari form
+	var formBody models.PhotoProfileStruct
+
+	// error jika data yang diinput tidak sesuai
+	if err := ctx.ShouldBind(&formBody); err != nil {
+		log.Println(err.Error()) 
+		ctx.JSON(http.StatusInternalServerError, models.Message{
+			Status: "failed",
+			Msg: "terjadi kesalahan server",
+		})
+		return
+	}
+
+	// ambil nilai dari forn yang dikirim user
+	file := formBody.Photo_path
 
 	// error = jika file tidak diupload user
 	if file == nil {
@@ -319,7 +421,7 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 	}
 
 	// jalankan fungsi repository untuk update data
-	cmd, err := u.usersRepo.UpdateProfile(ctx.Request.Context(), idInt, firstName, lastName, phoneNumber, filepath, title, hashedPass)
+	cmd, err := u.usersRepo.UpdatePhotoProfile(ctx.Request.Context(), idInt, filepath)
 
 	// error jika gagal mengakses server
 	if err != nil {

@@ -9,6 +9,11 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
+// @title				Tickizt App API
+// @version				1.0
+// @description			It is API for Tickizt App
+// @host				localhost:8080
+// @BasePath			/
 func main() {
 	db, err := pkg.Connect()
 	if  err != nil {

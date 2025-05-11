@@ -4,9 +4,13 @@ import (
 	"tikcitz-app/internals/middleware"
 	"tikcitz-app/internals/repositories"
 
+	_ "tikcitz-app/docs"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
+	swaggerFile "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func InitRouter(db *pgxpool.Pool,rdb *redis.Client) *gin.Engine {
@@ -20,9 +24,11 @@ func InitRouter(db *pgxpool.Pool,rdb *redis.Client) *gin.Engine {
     seatsRepo := repositories.NewSeatsRepository(db)
     router.Use(middleware.CORSMiddleware)
 
+    router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFile.Handler))
+
 	InitRouterUsers(router, usersRepo, middleware)
 	InitRouterMovies(router, moviesRepo, middleware)
-    InitRouterSchedule(router, scheduleRepo)
+    InitRouterSchedule(router, scheduleRepo, middleware)
     InitRouterOrders(router, ordersRepo, middleware)
     InitRouterSeats(router, seatsRepo)
 

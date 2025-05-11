@@ -127,19 +127,42 @@ func (u *UserRepository) GetProfileById(ctx context.Context, idInt int) ([]model
 }
 
 // Repository update profile
-func (u *UserRepository) UpdateProfile(ctx context.Context, idUser int, firstName, lastName, phoneNumber, filePath, title, password string) (pgconn.CommandTag, error) {
+func (u *UserRepository) UpdateProfile(ctx context.Context, idUser int, firstName, lastName, phoneNumber, title, password string) (pgconn.CommandTag, error) {
+	tx, err := u.db.Begin(ctx)
+	if err != nil {
+		return pgconn.CommandTag{}, err
+	}
+
+	defer tx.Rollback(ctx)
 
 	// update table profile berdasarkan user_id
-	query := "UPDATE profiles SET first_name = $1, last_name = $2, phone_number = $3, photo_path = $4, title = $5, modified_at = $6 WHERE user_id = $7"
-	values := []any{firstName, lastName, phoneNumber, filePath, title, time.Now(), idUser}
-	cmd, err := u.db.Exec(ctx, query, values...)
+	query := "UPDATE profiles SET first_name = $1, last_name = $2, phone_number = $3, title = $4, modified_at = $5 WHERE user_id = $6"
+	values := []any{firstName, lastName, phoneNumber, title, time.Now(), idUser}
+	cmd, err := tx.Exec(ctx, query, values...)
 	if err != nil {
 		return pgconn.CommandTag{}, err
 	}
 
 	// melakukan update password bersadarkan user_id
 	queryNewPassword := "update users set password = $1 where id = $2"
-	if _, err := u.db.Exec(ctx, queryNewPassword, password, idUser); err != nil {
+	if _, err := tx.Exec(ctx, queryNewPassword, password, idUser); err != nil {
+		return pgconn.CommandTag{}, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return pgconn.CommandTag{}, err
+	}
+	
+	return cmd, nil
+}
+
+func (u *UserRepository) UpdatePhotoProfile(ctx context.Context, idUser int, filePath string) (pgconn.CommandTag, error) {
+
+	// update table profile berdasarkan user_id
+	query := "UPDATE profiles SET photo_path = $1, modified_at = $2 WHERE user_id = $3"
+	values := []any{filePath, time.Now(), idUser}
+	cmd, err := u.db.Exec(ctx, query, values...)
+	if err != nil {
 		return pgconn.CommandTag{}, err
 	}
 	

@@ -64,6 +64,8 @@ func (s *ScheduleHandler) GetScheduleMovie(ctx *gin.Context) {
 		return
 	}
 
+	// menambahkan id di result
+
 	// tampilkan hasil response dari server
 	ctx.JSON(http.StatusOK, models.Message{
 		Status: "ok",

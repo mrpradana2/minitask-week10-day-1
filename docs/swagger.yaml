@@ -1,0 +1,78 @@
+basePath: /
+definitions:
+  models.Message:
+    properties:
+      message:
+        type: string
+      result: {}
+      status:
+        type: string
+      token:
+        type: string
+    type: object
+  models.UserLogin:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: It is API for Tickizt App
+  title: Tickizt App API
+  version: "1.0"
+paths:
+  /users/login:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Message'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Message'
+      summary: Login user
+  /users/signup:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Input email and password
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserLogin'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Message'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Message'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Message'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Message'
+      summary: Register user
+swagger: "2.0"
