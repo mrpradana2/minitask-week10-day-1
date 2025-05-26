@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"strings"
 	"tikcitz-app/internals/models"
 	"time"
 
@@ -51,16 +52,22 @@ func (u *UserRepository) UserRegister(ctx context.Context, email string, passwor
 }
 
 // Repository user login
-func (u *UserRepository) UserLogin(ctx context.Context, auth models.UsersStruct) (models.UsersStruct, error) {
+func (u *UserRepository) UserLogin(ctx context.Context, auth models.UsersStruct) (models.UsersStruct, models.ProfileStruct, error) {
 	// mengambil data user dari DB berdasarkan email
 	query := "SELECT id, email, password, role FROM users WHERE email = $1"
 	var result models.UsersStruct
 	err := u.db.QueryRow(ctx, query, auth.Email).Scan(&result.Id, &result.Email, &result.Password, &result.Role)
 	if err != nil {
-		return models.UsersStruct{}, err
+		return models.UsersStruct{}, models.ProfileStruct{}, err
 	}
 
-	return result, nil
+	queryGetProfile := "SELECT first_name, last_name, phone_number, photo_path, point FROM profiles WHERE user_id = $1"
+	var profile models.ProfileStruct
+	if err := u.db.QueryRow(ctx, queryGetProfile, result.Id).Scan(&profile.First_name, &profile.Last_name, &profile.Phone_number, &profile.PhotoPath, &profile.Point); err != nil {
+		return models.UsersStruct{}, models.ProfileStruct{}, err
+	}
+
+	return result, profile, nil
 }
 
 // Repository get profile by id
@@ -93,7 +100,7 @@ func (u *UserRepository) GetProfileById(ctx context.Context, idInt int) ([]model
 	}
 
 	// jika tidak terdapat data di redis maka jalankan query GET profile berikut ini
-	query := "SELECT user_id, first_name, last_name, phone_number, photo_path, title, point FROM profiles WHERE user_id = $1"
+	query := "SELECT p.user_id, p.first_name, p.last_name, p.phone_number, p.photo_path, p.title, p.point, u.email FROM profiles p join users u on u.id = p.user_id WHERE user_id = $1"
 	rows, err := u.db.Query(ctx, query, idInt)
 	if err != nil {
 		return nil, err
@@ -104,7 +111,7 @@ func (u *UserRepository) GetProfileById(ctx context.Context, idInt int) ([]model
 
 	for rows.Next() {
 		var profile models.ProfileStruct
-		if err := rows.Scan(&profile.User_Id, &profile.First_name, &profile.Last_name, &profile.Phone_number, &profile.PhotoPath, &profile.Title, &profile.Point); err != nil {
+		if err := rows.Scan(&profile.User_Id, &profile.First_name, &profile.Last_name, &profile.Phone_number, &profile.PhotoPath, &profile.Title, &profile.Point, &profile.Email); err != nil {
 			return []models.ProfileStruct{}, err
 		}
 		result = append(result, profile)
@@ -127,7 +134,7 @@ func (u *UserRepository) GetProfileById(ctx context.Context, idInt int) ([]model
 }
 
 // Repository update profile
-func (u *UserRepository) UpdateProfile(ctx context.Context, idUser int, firstName, lastName, phoneNumber, title, password string) (pgconn.CommandTag, error) {
+func (u *UserRepository) UpdateProfile(ctx context.Context, idUser int, firstName, lastName, phoneNumber, title, password, email, passTrigger string) (pgconn.CommandTag, error) {
 	tx, err := u.db.Begin(ctx)
 	if err != nil {
 		return pgconn.CommandTag{}, err
@@ -143,10 +150,18 @@ func (u *UserRepository) UpdateProfile(ctx context.Context, idUser int, firstNam
 		return pgconn.CommandTag{}, err
 	}
 
-	// melakukan update password bersadarkan user_id
-	queryNewPassword := "update users set password = $1 where id = $2"
-	if _, err := tx.Exec(ctx, queryNewPassword, password, idUser); err != nil {
+	// update email berdasarkan user id
+	queryNewEmail := "update users set email = $1 where id = $2"
+	if _, err := tx.Exec(ctx, queryNewEmail, email, idUser); err != nil {
 		return pgconn.CommandTag{}, err
+	}
+
+	if passTrigger != "" {
+		// melakukan update password bersadarkan user_id
+		queryNewPassword := "update users set password = $1 where id = $2"
+		if _, err := tx.Exec(ctx, queryNewPassword, password, idUser); err != nil {
+			return pgconn.CommandTag{}, err
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -157,10 +172,10 @@ func (u *UserRepository) UpdateProfile(ctx context.Context, idUser int, firstNam
 }
 
 func (u *UserRepository) UpdatePhotoProfile(ctx context.Context, idUser int, filePath string) (pgconn.CommandTag, error) {
-
+	newPath := strings.TrimPrefix(filePath, "public\\")
 	// update table profile berdasarkan user_id
 	query := "UPDATE profiles SET photo_path = $1, modified_at = $2 WHERE user_id = $3"
-	values := []any{filePath, time.Now(), idUser}
+	values := []any{newPath, time.Now(), idUser}
 	cmd, err := u.db.Exec(ctx, query, values...)
 	if err != nil {
 		return pgconn.CommandTag{}, err

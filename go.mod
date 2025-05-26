@@ -1,6 +1,7 @@
 module tikcitz-app
 
 go 1.24.2
+// go 1.21
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect

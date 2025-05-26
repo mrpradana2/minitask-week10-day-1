@@ -10,8 +10,9 @@ type ProfileStruct struct {
 	PhotoPath    string `db:"photo_profile" json:"photo_profile" form:"photo_profile,omitempty"`
 	Title        string `db:"title" json:"title" form:"title,omitempty"`
 	Point        int    `db:"point" json:"point" form:"point,omitempty"`
-	NewPassword     string `json:"new_password,omitempty" form:"new_password" binding:"required"`
-	ConfirmPassword string `json:"confirm_password,omitempty" form:"confirm_password" binding:"required"`
+	Email		 string `db:"email" json:"email,omitempty" form:"email,omitempty"`
+	NewPassword     string `json:"new_password,omitempty" form:"new_password"`
+	ConfirmPassword string `json:"confirm_password,omitempty" form:"confirm_password"`
 }
 
 type PhotoProfileStruct struct {

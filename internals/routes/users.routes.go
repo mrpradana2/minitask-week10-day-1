@@ -25,7 +25,7 @@ func InitRouterUsers(router *gin.Engine, usersRepo *repositories.UserRepository,
 	routerUsers.PATCH("", middleware.VerifyToken, middleware.AcceessGate("user"), usersHandler.UpdateProfile)
 
 	// router update photo profile
-	routerUsers.PATCH("/photoPhofile", middleware.VerifyToken, middleware.AcceessGate("user"), usersHandler.UpdatePhotoProfile)
+	routerUsers.PATCH("/photoProfile", middleware.VerifyToken, middleware.AcceessGate("user"), usersHandler.UpdatePhotoProfile)
 
 	// // router untuk verify user token
 	// routerUsers.GET("/verify", usersHandler.VerifyToken)

@@ -422,12 +422,7 @@ func (u *MoviesRepository) GetDetailMovie(ctx context.Context, movies models.Mov
 func (u *MoviesRepository) GetMoviesWithPagination(ctx context.Context, movie models.MoviesStruct, offset int, title, genre string) ([]models.MoviesStruct, error) {
 
 	// mengambil data movies didalam subquery yang sudah dibatasi menggunakan limit dan offset, dan hasil data movie tersebut dilakukan filter berdasarkan title dan genre movienya
-	query := `select id, title, release_date, overview, image_path, duration, director_name, genres, casts 
-	from (select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(distinct g.name) as "genres", array_agg(distinct c.name) as "casts" 
-	from movies m join movie_genres mg on mg.movie_id = m.id join genres g on mg.genre_id = g.id 
-	join movie_casts mc on mc.movie_id = m.id join casts c on c.id = mc.cast_id 
-	group by m.id order by m.id limit 5 offset $1) sq 
-	where lower(sq.title) like '%' || lower($2) ||'%' and lower(array_to_string(sq.genres, ',')) like '%' || lower($3) || '%'`
+	query := `select id, title, release_date, overview, image_path, duration, director_name, genres, casts from (select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(distinct g.name) as "genres", array_agg(distinct c.name) as "casts" from movies m join movie_genres mg on mg.movie_id = m.id join genres g on mg.genre_id = g.id join movie_casts mc on mc.movie_id = m.id join casts c on c.id = mc.cast_id group by m.id order by m.id limit 5 offset $1) sq where lower(sq.title) like '%' || lower($2) ||'%' and lower(array_to_string(sq.genres, ',')) like '%' || lower($3) || '%'`
 	values := []any{offset, title, genre}
 	rows, err := u.db.Query(ctx, query, values...)
 	if err != nil {

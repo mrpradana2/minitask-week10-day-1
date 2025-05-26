@@ -22,7 +22,7 @@ func NewClaims(id int, role string) *Claims {
 		Role: role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer: os.Getenv("JWT_ISSUER"),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 5)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 20)),
 			// jwt ini akan aktif selama 5 menit kedepan
 		},
 	}

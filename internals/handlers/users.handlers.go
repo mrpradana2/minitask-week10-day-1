@@ -160,7 +160,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 	}
 
 	// melakukan eksekusi fungsi repository user login
-	result, err := u.usersRepo.UserLogin(ctx.Request.Context(), auth)
+	result, profile, err := u.usersRepo.UserLogin(ctx.Request.Context(), auth)
 	log.Println("{DEBUGGGG}", result)
 	// error jika terjadi kesalahan dalam mengakses server
 	if err != nil {
@@ -214,6 +214,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 		Status: "success",
 		Msg: "login success",
 		Token: token,
+		Result: profile,
 	})
 }
 
@@ -301,6 +302,7 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 	firstName := updateProfile.First_name
 	lastName := updateProfile.Last_name
 	phoneNumber := updateProfile.Phone_number
+	email := updateProfile.Email
 	title := updateProfile.Title
 	newPassword := updateProfile.NewPassword
 	confirmPassword := updateProfile.ConfirmPassword
@@ -339,7 +341,7 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 	idInt := userClaims.Id
 
 	// jalankan fungsi repository untuk update data
-	cmd, err := u.usersRepo.UpdateProfile(ctx.Request.Context(), idInt, firstName, lastName, phoneNumber, title, hashedPass)
+	cmd, err := u.usersRepo.UpdateProfile(ctx.Request.Context(), idInt, firstName, lastName, phoneNumber, title, hashedPass, email, confirmPassword)
 
 	// error jika gagal mengakses server
 	if err != nil {
@@ -408,7 +410,7 @@ func (u *UsersHandler) UpdatePhotoProfile(ctx *gin.Context) {
 	filename := fmt.Sprintf("%d_%d_user_image%s", time.Now().UnixNano(), userClaims.Id, ext)
 
 	// gabungkan alamat folder dengan nama file yang sidah dibuat sehingga menjadi filepath
-	filepath := fp.Join("public", "img", filename)
+	filepath := fp.Join("public", "img", "photoProfiles", filename)
 
 	// error jika gagal melakukan upload
 	if err := ctx.SaveUploadedFile(file, filepath); err != nil {
