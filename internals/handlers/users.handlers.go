@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -40,7 +41,7 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 	// binding data 
 	// membaca request dari input user dari JSON sekaligus melakukan verifikasi, jika format json tidak sesuai dengan format yang ada didalam struct maka akan terjadi error 
 	if err := ctx.ShouldBindJSON(&newDataUser); err != nil {
-		log.Println("Binding error:", err)
+		log.Println("[ERROR] :", err.Error())
 
 		// error jika format email salah
 		if strings.Contains(err.Error(), "Error:Field validation for 'Email'") {
@@ -75,7 +76,7 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 
 	// error jika gagal mengkonversi password menjadi hash
 	if err != nil {
-		log.Println(err.Error())
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "hash failed",
@@ -91,7 +92,7 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 
 	// lakukan error handling jika terjadi kesalahan dalam menjalankan query / user sudah terdaftar sebelumnya
 	if err != nil {
-		log.Println("[ERROR]:", err)
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusConflict, models.Message{
 			Status: "failed",
 			Msg: "user already registered",
@@ -101,6 +102,7 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 
 	// cek apakah perintah berhasil manambahkan data di database 
 	if cmd.RowsAffected() == 0 {
+		log.Println("[ERROR] : ", errors.New("query failed, did not change the data in the database"))
 		log.Println("Query failed, did not change the data in the database")
 		return
 	}
@@ -130,7 +132,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 	// binding data 
 	// mambaca request dari input user dari JSON sekaligus melakukan verifikasi, jika format json tidak sesuai dengan format yang ada didalam struct maka akan terjadi error 
 	if err := ctx.ShouldBindJSON(&auth); err != nil {
-		log.Println(err.Error())
+		log.Println("[ERROR] : ", err.Error())
 
 		// error jika format email salah
 		if strings.Contains(err.Error(), "Error:Field validation for 'Email'") {
@@ -151,7 +153,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 		}
 
 		// error yang lainnya
-		log.Println("Binding error:", err)
+		log.Println("[ERROR] : ", err)
 		ctx.JSON(http.StatusBadRequest, models.Message{
 			Status: "failed",
 			Msg: "invalid data sent",
@@ -161,10 +163,9 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 
 	// melakukan eksekusi fungsi repository user login
 	result, profile, err := u.usersRepo.UserLogin(ctx.Request.Context(), auth)
-	log.Println("{DEBUGGGG}", result)
 	// error jika terjadi kesalahan dalam mengakses server
 	if err != nil {
-		log.Println("[ERROR]:", err)
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusUnauthorized, models.Message{
 			Status: "failed",
 			Msg: "incorrect email or password",
@@ -177,7 +178,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 	valid, err := hash.CompareHashAndPassword(result.Password, auth.Password)
 
 	if err != nil {
-		log.Println(err.Error())
+		log.Println("[ERROR] : ",err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "an error occurred on the server",
@@ -187,6 +188,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 
 	// error jika password tidak sesuai dengan password yang di hash
 	if !valid {
+		log.Println("[ERROR] : ", errors.New("incorrect email or password"))
 		ctx.JSON(http.StatusUnauthorized, models.Message{
 			Status: "failed",
 			Msg: "incorrect email or password",
@@ -196,12 +198,12 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 
 	// jika berhasil login, maka berikan identitas (jwt)
 	claims := pkg.NewClaims(result.Id, result.Role)
-	log.Println("[DEBUGGGGING]", claims)
+
 	token, err := claims.GenerateToken()
 
 	// error jika gagal menghasilkan token
 	if err != nil {
-		log.Println(err.Error())
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "an error occurred on the server",
@@ -237,7 +239,7 @@ func (u *UsersHandler) GetProfileById(ctx *gin.Context) {
 
 	// error jika profile user tidak ditemukan
 	if err != nil {
-		log.Println("[ERROR] :", err)
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusNotFound, models.Message{
 			Status: "failed",
 			Msg: "user not found",
@@ -292,6 +294,7 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 	updateProfile := models.ProfileStruct{}
 
 	if err := ctx.ShouldBindJSON(&updateProfile); err != nil {
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "invalid data sent",
@@ -307,10 +310,9 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 	newPassword := updateProfile.NewPassword
 	confirmPassword := updateProfile.ConfirmPassword
 
-	log.Println("hello", newPassword)
-	log.Println("hello", confirmPassword)
 	// error jika newpassword dan confirm password tidak sama
 	if newPassword != confirmPassword {
+		log.Println("[ERROR] : ", errors.New("password are not the same"))
 		ctx.JSON(http.StatusBadRequest, models.Message{
 			Status: "failed",
 			Msg: "password are not the same",
@@ -325,7 +327,7 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 
 	// error jika gagal mengkonversi password menjadi hash
 	if err != nil {
-		log.Println(err.Error())
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "hash failed",
@@ -345,7 +347,7 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 
 	// error jika gagal mengakses server
 	if err != nil {
-		log.Println("[ERROR]:", err)
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "an error occurred on the server",
@@ -355,7 +357,7 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 
 	// pesan error jika tidak terjadi perubahan pada database atau jika user id tidak ditemukan
 	if cmd.RowsAffected() == 0 {
-		log.Println("Query failed, did not change the data in the database")
+		log.Println("[ERROR] : ", errors.New("query failed, did not change the data in the database"))
 		ctx.JSON(http.StatusNotFound, models.Message{
 			Status: "failed",
 			Msg: "no updated data",
@@ -376,7 +378,7 @@ func (u *UsersHandler) UpdatePhotoProfile(ctx *gin.Context) {
 
 	// error jika data yang diinput tidak sesuai
 	if err := ctx.ShouldBind(&formBody); err != nil {
-		log.Println(err.Error()) 
+		log.Println("[ERROR] : ", err.Error()) 
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "terjadi kesalahan server",
@@ -389,6 +391,7 @@ func (u *UsersHandler) UpdatePhotoProfile(ctx *gin.Context) {
 
 	// error = jika file tidak diupload user
 	if file == nil {
+		log.Println("[ERROR] : ", errors.New("file not found"))
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "your file is empty",
@@ -414,7 +417,7 @@ func (u *UsersHandler) UpdatePhotoProfile(ctx *gin.Context) {
 
 	// error jika gagal melakukan upload
 	if err := ctx.SaveUploadedFile(file, filepath); err != nil {
-		log.Println(err.Error())
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "terjadi kesalahan upload",
@@ -427,7 +430,7 @@ func (u *UsersHandler) UpdatePhotoProfile(ctx *gin.Context) {
 
 	// error jika gagal mengakses server
 	if err != nil {
-		log.Println("[ERROR]:", err)
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "an error occurred on the server",
@@ -437,7 +440,7 @@ func (u *UsersHandler) UpdatePhotoProfile(ctx *gin.Context) {
 
 	// pesan error jika tidak terjadi perubahan pada database atau jika user id tidak ditemukan
 	if cmd.RowsAffected() == 0 {
-		log.Println("Query failed, did not change the data in the database")
+		log.Println("[ERROR] : ", errors.New("query failed, did not change the data in the database"))
 		ctx.JSON(http.StatusNotFound, models.Message{
 			Status: "failed",
 			Msg: "no updated data",

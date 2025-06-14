@@ -49,7 +49,7 @@ func (s *SeatsHandler) GetSeatsAvailable(ctx *gin.Context) {
 	// menjalankan fungsi repository getseatAvailable untuk mengakses data dari server
 	seats, err := s.seatsRepo.GetSeatsAvailable(ctx.Request.Context(), models.SeatsStruct{}, idInt)
 	if err != nil {
-		log.Println("[ERROR : ", err.Error())
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"msg": "an error occurred on the server",
 		})

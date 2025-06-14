@@ -69,5 +69,10 @@ func (s *SeatsRepository) GetSeatsAvailable(ctx context.Context, seat models.Sea
 		availableSeat.Seats = append(availableSeat.Seats, res.Seat)
 	}
 
+	if err := tx.Commit(ctx); err != nil {
+		log.Println("[ERROR] ; ", err.Error())
+		return models.ResultSeat{}, err
+	}
+
 	return availableSeat, nil
 }
