@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -25,6 +26,7 @@ func (s *ScheduleHandler) GetScheduleMovie(ctx *gin.Context) {
 
 	// handling error jika param tidak ada
 	if !ok {
+		log.Println("[ERROR] : ", errors.New("params not found"))
 		ctx.JSON(http.StatusBadRequest, models.Message{
 			Status: "failed",
 			Msg: "params id is needed",
@@ -36,7 +38,7 @@ func (s *ScheduleHandler) GetScheduleMovie(ctx *gin.Context) {
 	idInt, err := strconv.Atoi(idStr)
 
 	if err != nil {
-		log.Println("[ERROR] : ", err)
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "an error occurred on the server",
@@ -47,7 +49,7 @@ func (s *ScheduleHandler) GetScheduleMovie(ctx *gin.Context) {
 	// menjalankan fungsi repository getschedulemovie
 	result, err := s.scheduleRepo.GetScheduleMovie(ctx, &models.ScheduleStruct{}, idInt)
 	if err != nil {
-		log.Println("[ERROR]: ", err)
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "ok",
 			Msg: "an error occurred on the server",
@@ -57,6 +59,7 @@ func (s *ScheduleHandler) GetScheduleMovie(ctx *gin.Context) {
 
 	// error handling jika data yang diambil dari server kosong
 	if len(result) < 1 {
+		log.Println("[ERROR] : ", errors.New("schedule not found"))
 		ctx.JSON(http.StatusNotFound, models.Message{
 			Status: "failed",
 			Msg: "schedule not found",

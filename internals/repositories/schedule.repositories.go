@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"log"
 	"tikcitz-app/internals/models"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -23,6 +24,7 @@ func (s *ScheduleRepository) GetScheduleMovie(ctx context.Context, schedule *mod
 	query := "select s.id, m.id, m.title, c.name, c.image_path, s.date, s.time, s.location, s.price from schedule s join cinemas c on s.cinema_id = c.id join movies m on s.movie_id = m.id where m.id = $1"
 	rows, err := s.db.Query(ctx, query, idInt)
 	if err != nil {
+		log.Println("[ERROR] : ", err.Error())
 		return nil, err
 	}
 
@@ -32,6 +34,7 @@ func (s *ScheduleRepository) GetScheduleMovie(ctx context.Context, schedule *mod
 		var schedule models.ScheduleStruct
 		err := rows.Scan(&schedule.Id, &schedule.MovieId, &schedule.Title, &schedule.Cinema, &schedule.CinemaPathImage, &schedule.Date, &schedule.Time, &schedule.Location, &schedule.Price)
 		if err != nil {
+			log.Println("[ERROR] : ", err.Error())
 			return nil, err
 		}
 
