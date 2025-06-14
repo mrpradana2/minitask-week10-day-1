@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -30,7 +31,7 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 
 	// lakukan binding data jika ada data yang tidak sesuai dengan format, maka akan terjadi error
 	if err := ctx.ShouldBind(&newDataMovie); err != nil {
-		log.Println(err.Error())
+		log.Println("[ERROR]", err.Error())
 		if strings.Contains(err.Error(), "Field validation") {
 			ctx.JSON(http.StatusInternalServerError, models.Message{
 				Status: "failed",
@@ -65,6 +66,7 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 	
 	// jika file bernilai nil maka tampilkan error
 	if file == nil {
+		log.Println("[ERROR] : ", errors.New("file movie not found"))
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "your file is empty",
@@ -79,7 +81,7 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 	filename := fmt.Sprintf("%d_%d_movie_image%s", time.Now().UnixNano(), userClaims.Id, ext)
 	filepath := fp.Join("public", "img", "thumbnail", filename)
 	if err := ctx.SaveUploadedFile(file, filepath); err != nil {
-		log.Println(err.Error())
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "terjadi kesalahan upload",
@@ -92,7 +94,7 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 
 	// error jika terjadi masalah saat mengirim data
 	if err != nil {
-		log.Println("[ERROR]:", err)
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "error",
 			Msg: "an error occurred on the server",
@@ -115,6 +117,7 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 
 	// handling error jika param tidak ada
 	if !ok {
+		log.Println("[ERROR] : ", errors.New("params not found"))
 		ctx.JSON(http.StatusBadRequest, models.Message{
 			Status: "error",
 			Msg: "Param id is needed",
@@ -127,6 +130,7 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 
 	// handling error jika gagal mengkonversi id
 	if err != nil {
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "error",
 			Msg: "an error occurred on the server",
@@ -139,7 +143,7 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 
 	// lakukan binding data jika ada data yang tidak sesuai dengan format, maka akan terjadi error
 	if err := ctx.ShouldBind(&newDataMovie); err != nil {
-		log.Println(err.Error())
+		log.Println("[ERROR]", err.Error())
 		if strings.Contains(err.Error(), "Field validation") {
 			ctx.JSON(http.StatusInternalServerError, models.Message{
 				Status: "failed",
@@ -166,6 +170,7 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 	log.Println("hello", genres)
 	// jika file bernilai nil maka tampilkan error
 	if file == nil {
+		log.Println("ERROR", errors.New("file movie not found"))
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "your file is empty",
@@ -180,7 +185,7 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 	filename := fmt.Sprintf("%d_%d_movie_image%s", time.Now().UnixNano(), userClaims.Id, ext)
 	filepath := fp.Join("public", "img", "thumbnail", filename)
 	if err := ctx.SaveUploadedFile(file, filepath); err != nil {
-		log.Println(err.Error())
+		log.Println("[ERROR]", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "terjadi kesalahan upload",
@@ -193,7 +198,7 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 
 	// melakukan handling error jika query gagal
 	if err != nil {
-		log.Println("Insert profile error:", err)
+		log.Println("[ERROR] :", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "error",
 			Msg: "an error occurred on the server",
@@ -203,7 +208,7 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 
 	// handling error jika tidak terjadi perubahan sama sekali di database
 	if cmd.RowsAffected() == 0 {
-		log.Println("Query failed, could not change the data in the database")
+		log.Println("[ERROR]", errors.New("query failed, could not change the data in the database"))
 	}
 
 	// menampilkan response dari server, jika request dari client berhasil
@@ -220,6 +225,7 @@ func (m *Movieshandler) DeleteMovie(ctx *gin.Context) {
 
 	// handling error jika param tidak ada
 	if !ok {
+		log.Println("[ERROR] : ", errors.New("params not found"))
 		ctx.JSON(http.StatusBadRequest, models.Message{
 			Status: "error",
 			Msg: "Param id is needed",
@@ -232,6 +238,7 @@ func (m *Movieshandler) DeleteMovie(ctx *gin.Context) {
 
 	// melakukan error handling jika gagal mengkonversi id
 	if err != nil {
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "error",
 			Msg: "an error occurred on the server",
@@ -244,7 +251,7 @@ func (m *Movieshandler) DeleteMovie(ctx *gin.Context) {
 
 	// melakukan error handling jika query gagal dijalankan
 	if err != nil {
-		log.Println("[ERROR]", err)
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "error",
 			Msg: "an error occurred on the server",
@@ -254,6 +261,7 @@ func (m *Movieshandler) DeleteMovie(ctx *gin.Context) {
 
 	// error handling jika movie yang akan dihapus tidak tersedia
 	if cmd.RowsAffected() == 0 {
+		log.Println("[ERROR] : ", errors.New("movie not found"))
 		ctx.JSON(http.StatusNotFound, models.Message{
 			Status: "failed",
 			Msg: "Movie not found",
@@ -275,7 +283,7 @@ func (m *Movieshandler) GetMoviesUpcoming(ctx *gin.Context) {
 
 	// mengecek jika terjadi error saat mengakses data di server
 	if err != nil {
-		log.Println("Get Movie error:", err)
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "ok",
 			Msg: "an error occurred on the server",
@@ -285,6 +293,7 @@ func (m *Movieshandler) GetMoviesUpcoming(ctx *gin.Context) {
 
 	// error handling jika hasil request dari server kosong
 	if len(result) < 1 {
+		log.Println("[ERROR] : ", errors.New("movie not found"))
 		ctx.JSON(http.StatusNotFound, models.Message{
 			Status: "ok",
 			Msg: "movie not found",
@@ -303,7 +312,7 @@ func (m *Movieshandler) GetMoviesUpcoming(ctx *gin.Context) {
 func (m *Movieshandler) GetMoviesPopular(ctx *gin.Context) {
 	result, err := m.moviesRepo.GetMoviePopular(ctx.Request.Context())
 	if err != nil {
-		log.Println("Get Movie error:", err)
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "server error",
 			Msg: "an error occurred on the server",
@@ -312,6 +321,7 @@ func (m *Movieshandler) GetMoviesPopular(ctx *gin.Context) {
 	}
 
 	if len(result) < 1 {
+		log.Println("[ERROR] : ", errors.New("movie not found"))
 		ctx.JSON(http.StatusNotFound, models.Message{
 			Status: "not found",
 			Msg: "movie not found",
@@ -386,7 +396,7 @@ func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 	if pageQ == "" {
 		result, err := m.moviesRepo.GetMovies(ctx.Request.Context())
 		if err != nil {
-			log.Println("Get Movie error:", err)
+			log.Println("[ERROR] : ", err.Error())
 			ctx.JSON(http.StatusInternalServerError, models.Message{
 				Status: "failed",
 				Msg: "an error occurred on the server",
@@ -395,6 +405,7 @@ func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 		}
 
 		if len(result) < 1 {
+			log.Println("[ERROR] : ", errors.New("movie not found"))
 			ctx.JSON(http.StatusNotFound, models.Message{
 				Status: "not found",
 				Msg: "movie not found",
@@ -413,6 +424,7 @@ func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 	pageQInt, err := strconv.Atoi(pageQ)
 
 	if err != nil {
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "ok",
 			Msg: "an error occurred on the server",
@@ -437,7 +449,7 @@ func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 	result, err := m.moviesRepo.GetMoviesWithPagination(ctx.Request.Context(), models.MoviesStruct{}, offset, titleQ, genreQ)
 
 	if err != nil {
-		log.Println("Get Movie error:", err)
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "an error occurred on the server",
@@ -446,6 +458,7 @@ func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 	}
 
 	if len(result) < 1 {
+		log.Println("[ERROR] : ", errors.New("movie not found"))
 		ctx.JSON(http.StatusNotFound, models.Message{
 			Status: "not found",
 			Msg: "movie not found",
@@ -459,37 +472,3 @@ func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 		Result: result,
 	})
 }
-
-// Handler get all movies (fix)
-// func (m *Movieshandler) GetMovies(ctx *gin.Context) {
-
-// 	// manjalankan fungsi repository get movies 
-// 	result, err := m.moviesRepo.GetMovies(ctx.Request.Context())
-
-// 	// mengecek jika terjadi error saat mengakses data di server
-// 	if err != nil {
-// 		log.Println("[ERROR]", err.Error())
-// 		ctx.JSON(http.StatusInternalServerError, models.Message{
-// 			Status: "error",
-// 			Msg: "an error occurred on the server",
-// 		})
-// 		return
-// 	}
-
-// 	// mengecek jika data yang diambil dari server kosong
-// 	if len(result) == 0 {
-// 		log.Println(result)
-// 		ctx.JSON(http.StatusInternalServerError, models.Message{
-// 			Status: "error",
-// 			Msg: "movie not found",
-// 		})
-// 		return
-// 	}
-
-// 	// menampilkan hasil response jika request berhasil dari server
-// 	ctx.JSON(http.StatusOK, models.Message{
-// 		Status: "ok",
-// 		Msg: "success",
-// 		Result: result,
-// 	})
-// }
