@@ -13,7 +13,7 @@ func InitRouterMovies(router *gin.Engine, moviesRepo *repositories.MoviesReposit
 	moviesHandler := handlers.NewMovieshandler(moviesRepo)
 
 	// Router add movie (fix)
-	routerMovies.POST("", middleware.VerifyToken, middleware.AcceessGate("admin"), moviesHandler.AddMovie)
+	routerMovies.POST("", middleware.VerifyToken, middleware.AcceessGate("admin", "user"), moviesHandler.AddMovie)
 
 	// Router update movie
 	routerMovies.PUT("/:id", middleware.VerifyToken, middleware.AcceessGate("admin"), moviesHandler.UpdateMovie)
