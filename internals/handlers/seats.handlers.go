@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"tikcitz-app/internals/models"
@@ -23,6 +25,7 @@ func (s *SeatsHandler) GetSeatsAvailable(ctx *gin.Context) {
 
 	// handling error jika param tidak ada
 	if !ok {
+		log.Println("[ERROR] : ", errors.New("params not found"))
 		ctx.JSON(http.StatusBadRequest, models.Message{
 			Status: "error",
 			Msg: "Param id is needed",
@@ -35,6 +38,7 @@ func (s *SeatsHandler) GetSeatsAvailable(ctx *gin.Context) {
 
 	// melakukan error handling jika gagal mengkonversi id
 	if err != nil {
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "error",
 			Msg: "an error occurred on the server",
@@ -45,6 +49,7 @@ func (s *SeatsHandler) GetSeatsAvailable(ctx *gin.Context) {
 	// menjalankan fungsi repository getseatAvailable untuk mengakses data dari server
 	seats, err := s.seatsRepo.GetSeatsAvailable(ctx.Request.Context(), models.SeatsStruct{}, idInt)
 	if err != nil {
+		log.Println("[ERROR : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"msg": "an error occurred on the server",
 		})

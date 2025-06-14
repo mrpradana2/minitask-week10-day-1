@@ -19,6 +19,13 @@ func NewSeatsRepository(db *pgxpool.Pool) *SeatsRepository {
 // repository get available seats
 func (s *SeatsRepository) GetSeatsAvailable(ctx context.Context, seat models.SeatsStruct, id int) (models.ResultSeat, error) {
 	
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		log.Println("[ERROR] : ", err.Error())
+		return models.ResultSeat{}, err
+	}
+
+	defer tx.Rollback(ctx)
 
 	// mengambil seat available
 	// query mengambil table seats, dengan ketentuan tidak mengambil hasil seat yang terdapat pada sub query
@@ -26,8 +33,9 @@ func (s *SeatsRepository) GetSeatsAvailable(ctx context.Context, seat models.Sea
 	query := "select s.id, s.kode from seats s where not exists (select s.kode from orders o2 join order_seats os2 on o2.id = os2.order_id where o2.schedule_id = $1 and os2.seat_id = s.id)"
 
 	// mengambil data hasil query
-	rows, err := s.db.Query(ctx, query, id)
+	rows, err := tx.Query(ctx, query, id)
 	if err != nil {
+		log.Println("[ERROR] : ", err.Error())
 		return models.ResultSeat{}, err
 	}
 
@@ -38,6 +46,7 @@ func (s *SeatsRepository) GetSeatsAvailable(ctx context.Context, seat models.Sea
 	for rows.Next() {
 		var seat models.SeatsStruct
 		if err := rows.Scan(&seat.Id, &seat.Seat); err != nil {
+			log.Println("[ERROR] : ", err.Error())
 			return models.ResultSeat{}, err
 		}
 		result = append(result, seat)
@@ -50,7 +59,8 @@ func (s *SeatsRepository) GetSeatsAvailable(ctx context.Context, seat models.Sea
 	var availableSeat models.ResultSeat
 
 	// menjalankan query row untuk mengakses database untuk mendapatkan data schedule
-	if err := s.db.QueryRow(ctx, queryGetSchedule, id).Scan(&availableSeat.Id, &availableSeat.Title, &availableSeat.Cinema, &availableSeat.Date, &availableSeat.Time); err != nil {
+	if err := tx.QueryRow(ctx, queryGetSchedule, id).Scan(&availableSeat.Id, &availableSeat.Title, &availableSeat.Cinema, &availableSeat.Date, &availableSeat.Time); err != nil {
+		log.Println("[ERROR] : ", err.Error())
 		return models.ResultSeat{}, err
 	}
 
@@ -58,8 +68,6 @@ func (s *SeatsRepository) GetSeatsAvailable(ctx context.Context, seat models.Sea
 	for _, res := range result {
 		availableSeat.Seats = append(availableSeat.Seats, res.Seat)
 	}
-
-	log.Println(availableSeat)
 
 	return availableSeat, nil
 }
