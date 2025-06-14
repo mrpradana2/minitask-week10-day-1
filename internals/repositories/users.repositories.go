@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"strings"
 	"tikcitz-app/internals/models"
@@ -89,32 +88,6 @@ func (u *UserRepository) UserLogin(ctx context.Context, auth models.UsersStruct)
 
 // Repository get profile by id
 func (u *UserRepository) GetProfileById(ctx context.Context, idInt int) ([]models.ProfileStruct, error) {
-	// cek redis terlebih dahulu, jika ada nilainya, maka gunakan nilai dari redis
-	// buat kata kunci untuk di redis 
-	redisKey := "Profile"
-
-	// ambil penyimpanan di redis dengan key yang sudah dibuat
-	cache, err := u.rdb.Get(ctx, redisKey).Result()
-
-	// error handling jika terjadi error: kunci redis tidak ditemukan atau bernilai nil atau redis tidak bekerja
-	if err != nil {
-		if err == redis.Nil {
-			log.Printf("\nkey %s does not exist\n", redisKey)
-		} else {
-			log.Println("Redis not working")
-		}
-	} else {
-		// lakukan parsing data dari redis menjadi bentuk JSON
-		var profile []models.ProfileStruct
-		if err := json.Unmarshal([]byte(cache), &profile); err != nil {
-			return []models.ProfileStruct{}, err
-		}
-
-		// jika berhasil mendapatkan data di redis maka tampilkan hasil dari redis
-		if len(profile) > 0 {
-			return profile, nil
-		}
-	}
 
 	// jika tidak terdapat data di redis maka jalankan query GET profile berikut ini
 	query := "SELECT p.user_id, p.first_name, p.last_name, p.phone_number, p.photo_path, p.title, p.point, u.email FROM profiles p join users u on u.id = p.user_id WHERE user_id = $1"
@@ -132,19 +105,6 @@ func (u *UserRepository) GetProfileById(ctx context.Context, idInt int) ([]model
 			return []models.ProfileStruct{}, err
 		}
 		result = append(result, profile)
-	}
-
-	// jika berhasil mendapatkan data dari DB maka ambil data tersebut dan masukkan ke dalam redis
-
-	// lakukan parsing dari JSON menjadi bentuk string untuk disimpan kedalam redis
-	res, err := json.Marshal(result)
-	if err != nil {
-		log.Println("DEBUG : ", err.Error())
-	}
-
-	// simpan data yang sudah di parsing menjadi string kedalam redis 
-	if err := u.rdb.Set(ctx, redisKey, string(res), time.Minute*5).Err(); err != nil {
-		log.Println("[DEBUG] redis set", err.Error())
 	}
 	
 	return result, nil

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"tikcitz-app/internals/models"
 	"tikcitz-app/internals/utils"
@@ -9,14 +10,16 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 )
 
 type MoviesRepository struct{
 	db *pgxpool.Pool
+	rdb *redis.Client
 }
 
-func NewMoviesRepository(db *pgxpool.Pool) *MoviesRepository {
-	return &MoviesRepository{db: db}
+func NewMoviesRepository(db *pgxpool.Pool, rdb *redis.Client) *MoviesRepository {
+	return &MoviesRepository{db: db, rdb: rdb}
 }
 
 // repository get movie all (fix)
@@ -168,6 +171,18 @@ func (u *MoviesRepository) AddMovie(ctx context.Context, title, filePath, overvi
 		}
 	}
 
+	// reset redis dari storage
+	redisKeyUpcoming := "movieUpcoming"
+	redisKeyPopular := "moviePopular"
+	if err := u.rdb.Del(ctx, redisKeyUpcoming); err != nil {
+		log.Println("[ERROR] ; ", err.Err().Error());
+	}
+
+
+	if err := u.rdb.Del(ctx, redisKeyPopular); err != nil {
+		log.Println("[ERROR] : ", err.Err().Error())
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		return err
@@ -271,7 +286,18 @@ func (u *MoviesRepository) UpdateMovie(ctx context.Context, title, filePath, ove
 		log.Println("[ERROR] : ", err.Error())
 		return pgconn.CommandTag{}, err
 	}
-	
+
+	// reset redis dari storage
+	redisKeyUpcoming := "movieUpcoming"
+	redisKeyPopular := "moviePopular"
+	if err := u.rdb.Del(ctx, redisKeyUpcoming); err != nil {
+		log.Println("[ERROR] ; ", err.Err().Error());
+	}
+
+
+	if err := u.rdb.Del(ctx, redisKeyPopular); err != nil {
+		log.Println("[ERROR] : ", err.Err().Error())
+	}
 
 	return cmd, nil
 }
@@ -324,11 +350,51 @@ func (u *MoviesRepository) DeleteMovie(ctx context.Context, idInt int) (pgconn.C
 		return pgconn.CommandTag{}, err
 	}
 
+	// reset redis dari storage
+	redisKeyUpcoming := "movieUpcoming"
+	redisKeyPopular := "moviePopular"
+	if err := u.rdb.Del(ctx, redisKeyUpcoming); err != nil {
+		log.Println("[ERROR] ; ", err.Err().Error());
+	}
+
+
+	if err := u.rdb.Del(ctx, redisKeyPopular); err != nil {
+		log.Println("[ERROR] : ", err.Err().Error())
+	}
+
 	return cmd, nil
 }
 
 // repository get upcoming movie (fix)
 func (u *MoviesRepository) GetMovieUpcoming(ctx context.Context) ([]models.MoviesStruct, error) {
+	// cek redis terlebih dahulu, jika ada nilainya, maka gunakan nilai dari redis
+	// buat kata kunci untuk di redis 
+	redisKey := "movieUpcoming"
+
+	// ambil penyimpanan di redis dengan key yang sudah dibuat
+	cache, err := u.rdb.Get(ctx, redisKey).Result()
+
+	// error handling jika terjadi error: kunci redis tidak ditemukan atau bernilai nil atau redis tidak bekerja
+	if err != nil {
+		log.Println("[ERROR] : ", err.Error())
+		if err == redis.Nil {
+			log.Printf("\nkey %s does not exist\n", redisKey)
+		} else {
+			log.Println("Redis not working")
+		}
+	} else {
+		// lakukan parsing data dari redis menjadi bentuk JSON
+		var movies []models.MoviesStruct
+		if err := json.Unmarshal([]byte(cache), &movies); err != nil {
+			log.Println("[ERROR] : ", err.Error())
+			return []models.MoviesStruct{}, err
+		}
+
+		// jika berhasil mendapatkan data di redis maka tampilkan hasil dari redis
+		if len(movies) > 0 {
+			return movies, nil
+		}
+	}
 	
 	// mengambil data movies dengan ketentuan release_date harus lebih besar dari pada waktu sekarang
 	query := `select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(distinct g.name) as "genres", array_agg(distinct c.name) from movies m join movie_genres mg on mg.movie_id = m.id join genres g on mg.genre_id = g.id join movie_casts mc on mc.movie_id = m.id join casts c on c.id = mc.cast_id where m.release_date > now() group by m.id order by m.id asc`
@@ -349,12 +415,51 @@ func (u *MoviesRepository) GetMovieUpcoming(ctx context.Context) ([]models.Movie
 		}
 		result = append(result, movies)
 	}
+
+	// lakukan parsing dari JSON menjadi bentuk string untuk disimpan kedalam redis
+	res, err := json.Marshal(result)
+	if err != nil {
+		log.Println("[ERROR] : ", err.Error())
+	}
+
+	// simpan data yang sudah di parsing menjadi string kedalam redis 
+	if err := u.rdb.Set(ctx, redisKey, string(res), time.Minute*20).Err(); err != nil {
+		log.Println("[DEBUG] redis set", err.Error())
+	}
 	
 	return result, nil
 }
 
 // repository get popular movie
 func (u *MoviesRepository) GetMoviePopular(ctx context.Context) ([]models.MoviesStruct, error) {
+	// cek redis terlebih dahulu, jika ada nilainya, maka gunakan nilai dari redis
+	// buat kata kunci untuk di redis 
+	redisKey := "moviePopular"
+
+	// ambil penyimpanan di redis dengan key yang sudah dibuat
+	cache, err := u.rdb.Get(ctx, redisKey).Result()
+
+	// error handling jika terjadi error: kunci redis tidak ditemukan atau bernilai nil atau redis tidak bekerja
+	if err != nil {
+		log.Println("[ERROR] : ", err.Error())
+		if err == redis.Nil {
+			log.Printf("\nkey %s does not exist\n", redisKey)
+		} else {
+			log.Println("Redis not working")
+		}
+	} else {
+		// lakukan parsing data dari redis menjadi bentuk JSON
+		var movies []models.MoviesStruct
+		if err := json.Unmarshal([]byte(cache), &movies); err != nil {
+			log.Println("[ERROR] : ", err.Error())
+			return []models.MoviesStruct{}, err
+		}
+
+		// jika berhasil mendapatkan data di redis maka tampilkan hasil dari redis
+		if len(movies) > 0 {
+			return movies, nil
+		}
+	}
 
 	// mengambil data movies dengan ketentuan jumlah jumlah order dalam tabel orders_seat harus lebih dari 10
 	query := `select m.id, m.title, m.release_date, m.overview, m.image_path, m.duration, m.director_name, array_agg(distinct g.name) as "genres", array_agg(distinct c.name) as "casts", COUNT(distinct os.id) as "qty" from orders o join schedule s on o.schedule_id = s.id join movies m on m.id = s.movie_id join order_seats os on os.order_id = o.id join movie_genres mg on mg.movie_id = m.id join genres g on g.id = mg.genre_id join movie_casts mc on mc.movie_id = m.id join casts c on c.id = mc.cast_id group by m.id having COUNT(os.order_id) > 10`
@@ -374,6 +479,18 @@ func (u *MoviesRepository) GetMoviePopular(ctx context.Context) ([]models.Movies
 		}
 		result = append(result, movies)
 	}
+
+	// lakukan parsing dari JSON menjadi bentuk string untuk disimpan kedalam redis
+	res, err := json.Marshal(result)
+	if err != nil {
+		log.Println("[ERROR] : ", err.Error())
+	}
+
+	// simpan data yang sudah di parsing menjadi string kedalam redis 
+	if err := u.rdb.Set(ctx, redisKey, string(res), time.Minute*20).Err(); err != nil {
+		log.Println("[DEBUG] redis set", err.Error())
+	}
+
 	return result, nil
 }
 

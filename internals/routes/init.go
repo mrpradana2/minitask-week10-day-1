@@ -17,7 +17,7 @@ func InitRouter(db *pgxpool.Pool,rdb *redis.Client) *gin.Engine {
 	router := gin.Default()
     middleware := middleware.InitMiddleware()
 
-    moviesRepo := repositories.NewMoviesRepository(db)
+    moviesRepo := repositories.NewMoviesRepository(db, rdb)
     usersRepo := repositories.NewUserRepository(db, rdb)
     scheduleRepo := repositories.NewScheduleRepository(db)
     ordersRepo := repositories.NewOrdersRepository(db)
