@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -30,9 +31,10 @@ func (o *OrdersHandler) CreateOrder(ctx *gin.Context) {
 
 	// binding data
 	if err := ctx.ShouldBindJSON(&newOrder); err != nil {
-		log.Println("Binding error:", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"msg": "invalid data sent",
+		log.Println("[ERROR] : ", err.Error())
+		ctx.JSON(http.StatusBadRequest, models.Message{
+			Status: "falied",
+			Msg: "invalid data sent",
 		})
 		return
 	}
@@ -40,7 +42,7 @@ func (o *OrdersHandler) CreateOrder(ctx *gin.Context) {
 	errCreateOrder := o.ordersRepo.CreateOrder(ctx.Request.Context(), newOrder, userClaims.Id)
 
 	if errCreateOrder != nil {
-		log.Println("[DEBUG] : ", errCreateOrder)
+		log.Println("[ERROR] : ", errCreateOrder.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "internal server error",
@@ -67,7 +69,7 @@ func (o *OrdersHandler) GetOrderHistory(ctx *gin.Context) {
 
 	// error handling jika gagal menjalankan query
 	if err != nil {
-		log.Println("[ERROR]: ", err)
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "server error",
@@ -77,6 +79,7 @@ func (o *OrdersHandler) GetOrderHistory(ctx *gin.Context) {
 
 	// mengecek jika order 0, maka tampilkan error movie not found
 	if len(result) < 1 {
+		log.Println("[ERROR] : ", errors.New("orders not found"))
 		ctx.JSON(http.StatusNotFound, models.Message{
 			Status: "failed",
 			Msg: "orders not found",
@@ -104,6 +107,7 @@ func (o *OrdersHandler) GetOrderById(ctx *gin.Context) {
 
 	// handling error jika param tidak ada
 	if !ok {
+		log.Println("[ERROR] : ", errors.New("params not found"))
 		ctx.JSON(http.StatusBadRequest, models.Message{
 			Status: "error",
 			Msg: "Param id is needed",
@@ -115,7 +119,7 @@ func (o *OrdersHandler) GetOrderById(ctx *gin.Context) {
 	orderId, err := strconv.Atoi(idStr)
 
 	if err != nil {
-		log.Println("[BEDUG] : ", err)
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "error",
 			Msg: "an error occurred on the server",
@@ -126,7 +130,7 @@ func (o *OrdersHandler) GetOrderById(ctx *gin.Context) {
 	result, err := o.ordersRepo.GetOrderById(ctx.Request.Context(), userClaims.Id, orderId)
 	// error handling jika gagal menjalankan query
 	if err != nil {
-		log.Println("[ERROR]: ", err)
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
 			Status: "failed",
 			Msg: "server error",
@@ -136,6 +140,7 @@ func (o *OrdersHandler) GetOrderById(ctx *gin.Context) {
 
 	// mengecek jika order 0, maka tampilkan error movie not found
 	if len(result) < 1 {
+		log.Println("[ERROR] : ", errors.New("orders not found"))
 		ctx.JSON(http.StatusNotFound, models.Message{
 			Status: "failed",
 			Msg: "orders not found",

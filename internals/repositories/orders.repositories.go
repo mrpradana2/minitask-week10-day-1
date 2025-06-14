@@ -24,6 +24,7 @@ func (o *OrdersRepository) CreateOrder(ctx context.Context, order models.OrdersS
 	// awali dengan db transaction
 	tx, err := o.db.Begin(ctx)
 	if err != nil {
+		log.Println("[ERROR] : ", err.Error())
 		return nil
 	}
 
@@ -35,6 +36,7 @@ func (o *OrdersRepository) CreateOrder(ctx context.Context, order models.OrdersS
 	values := []any{IdInt, order.ScheduleId, order.PaymentMethodeId, order.Date, order.Time, order.TotalPrice, order.FullName, order.Email, order.PhoneNumber, order.Paid}
 	var orderId int
 	if err := tx.QueryRow(ctx, query, values...).Scan(&orderId); err != nil {
+		log.Println("[ERROR] : ", err.Error())
 		return err
 	}
 
@@ -42,6 +44,7 @@ func (o *OrdersRepository) CreateOrder(ctx context.Context, order models.OrdersS
 	// update point user di table profiles
 	queryAddPointUser := "UPDATE profiles SET point = point + 50 WHERE user_id = $1"
 	if _, err := tx.Exec(ctx, queryAddPointUser, IdInt); err != nil {
+		log.Println("[ERROR] : ", err.Error())
 		return err
 	}
 
@@ -51,7 +54,7 @@ func (o *OrdersRepository) CreateOrder(ctx context.Context, order models.OrdersS
 	// mengeksekusi query select seat_id yang sudah di build
 	rows, err := tx.Query(ctx, querySelectSeats, seats...)
 	if err != nil {
-		log.Println(err.Error())
+		log.Println("[ERROR] : ", err.Error())
 		return err
 	}
 	
@@ -61,31 +64,30 @@ func (o *OrdersRepository) CreateOrder(ctx context.Context, order models.OrdersS
 	for rows.Next() {
 		var idSeat int
 		if err := rows.Scan(&idSeat); err != nil {
+			log.Println("[ERROR] : ", err.Error())
 			return err
 		}
 		idSeats = append(idSeats, idSeat)
 	}
 
 	if len(order.Seats) != len(idSeats) - 1 {
+		log.Println("[ERROR] ; ", errors.New("invalid choose seat"))
 		return errors.New("kursi yang anda pesan tidak valid")
 	}
-	log.Println("LEN ORDER SEATS : ", order.Seats)
-	log.Println("LEN ID SEATS : ", idSeats)
-	log.Println(idSeats...)
 
 	// menambahkan order_id dan order seat ke table asosiasi order_seats
 	// melakukan build untuk query insert order_seats
 	queryInsertOrderSeats := utils.InsertTableAssoc("order_seats", "order_id", "seat_id", idSeats)
 
 	// mengeksekusi query insert order_seats yang sudah di build
-	log.Println("Query Insert OrderSeats", queryInsertOrderSeats)
-	log.Println("idSeats", idSeats)
 	if _, err := tx.Exec(ctx, queryInsertOrderSeats, idSeats...); err != nil {
+		log.Println("[ERROR] : ", err.Error())
 		return err
 	}
 
 	// jangan lupa commit
 	if err := tx.Commit(ctx); err != nil {
+		log.Println("[ERROR] : ", err.Error())
 		return err
 	} 
 
@@ -100,6 +102,7 @@ func (o *OrdersRepository) GetOrderHistory(ctx context.Context, IdInt int) ([]mo
 	values := []any{IdInt}
 	rows, err := o.db.Query(ctx, query, values...)
 	if err != nil {
+		log.Println("[ERROR] : ", err.Error())
 		return nil, err
 	} 
 	
@@ -110,6 +113,7 @@ func (o *OrdersRepository) GetOrderHistory(ctx context.Context, IdInt int) ([]mo
 		var order models.OrdersStr
 		err := rows.Scan(&order.Id, &order.Title, &order.ImagePath, &order.Date, &order.Time, &order.TotalPrice, &order.Paid, &order.Seats)
 		if err != nil {
+			log.Println("[ERROR] : ", err.Error())
 			return nil, err
 		}
 		result = append(result, order)
@@ -125,6 +129,7 @@ func (o *OrdersRepository) GetOrderById(ctx context.Context, userId, orderId int
 	values := []any{userId, orderId}
 	rows, err := o.db.Query(ctx, query, values...)
 	if err != nil {
+		log.Println("[ERROR] ; ", err.Error())
 		return nil, err
 	} 
 	
@@ -135,6 +140,7 @@ func (o *OrdersRepository) GetOrderById(ctx context.Context, userId, orderId int
 		var order models.OrdersStr
 		err := rows.Scan(&order.Id, &order.Title, &order.ImagePath, &order.Date, &order.Time, &order.TotalPrice, &order.Paid, &order.Seats)
 		if err != nil {
+			log.Println("[ERROR] : ", err.Error())
 			return nil, err
 		}
 		result = append(result, order)
