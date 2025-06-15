@@ -14,6 +14,9 @@ import (
 // @description			It is API for Tickizt App
 // @host				localhost:8080
 // @BasePath			/
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	db, err := pkg.Connect()
 	if  err != nil {

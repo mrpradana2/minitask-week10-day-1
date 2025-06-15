@@ -42,3 +42,16 @@ type OrdersStr struct {
 	ImagePath string `json:"image_cinema_path"`
 	Title string `json:"title"`
 }
+
+type RequestOrdersStruct struct {
+	ScheduleId int `json:"schedule_id,omitempty" form:"schedule_id" binding:"required"`
+	PaymentMethodeId int `json:"payment_methode_id,omitempty" form:"payment_methode_id" binding:"required"`
+	Date time.Time `json:"date" form:"date" binding:"required"`
+	Time time.Time `json:"time" form:"time" binding:"required"`
+	TotalPrice int `json:"total_price" form:"total_price" binding:"required"`
+	FullName string `json:"full_name,omitempty" form:"full_name" binding:"required"`
+	Email string `json:"email,omitempty" form:"email" binding:"required,email"`
+	PhoneNumber string `json:"phone_number,omitempty" form:"phone_number" binding:"required"`
+	Paid bool `json:"paid" form:"paid" binding:"required"`
+	Seats []string `json:"seats" form:"seats" binding:"required"`
+}

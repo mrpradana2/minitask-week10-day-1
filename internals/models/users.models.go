@@ -15,8 +15,23 @@ type ProfileStruct struct {
 	ConfirmPassword string `json:"confirm_password,omitempty" form:"confirm_password"`
 }
 
+type RequestProfileStruct struct {
+	First_name   string `db:"first_name" json:"first_name" form:"first_name,omitempty"`
+	Last_name    string `db:"last_name" json:"last_name" form:"last_name,omitempty"`
+	Phone_number string `db:"phone_number" json:"phone_number" form:"phone_number,omitempty"`
+	Title        string `db:"title" json:"title" form:"title,omitempty"`
+	Email		 string `db:"email" json:"email,omitempty" form:"email,omitempty"`
+	NewPassword     string `json:"new_password,omitempty" form:"new_password"`
+	ConfirmPassword string `json:"confirm_password,omitempty" form:"confirm_password"`
+}
+
 type PhotoProfileStruct struct {
 	Photo_path   *multipart.FileHeader `db:"photo" json:"-" form:"photo,omitempty"`
+}
+
+// swagger:model
+type RequestPhotoProfileStruct struct {
+	Photo_path   string `db:"photo" json:"photo" form:"photo,omitempty"`
 }
 
 type UsersStruct struct {

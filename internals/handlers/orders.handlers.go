@@ -20,7 +20,20 @@ func NewOrdersHandler(ordersRepo *repositories.OrdersRepository) *OrdersHandler 
 	return &OrdersHandler{ordersRepo: ordersRepo}
 }
 
-// Handler create order (fix)
+// Create Order
+// @summary					Create order movie
+// @router					/order [post]
+// @Description 			Create order seat movie
+// @Tags        			Order
+// @Param        			requestBody body models.RequestOrdersStruct true "Input data for create order"
+// @Param 					Authorization header string true "Bearer Token"
+// @accept					json
+// @produce					json
+// @Security    			BearerAuth
+// @failure					500 {object} models.MessageInternalServerError
+// @failure					400 {object} models.MessageBadRequest
+// @failure					409 {object} models.MessageConflict
+// @success					201 {object} models.MessageCreated
 func (o *OrdersHandler) CreateOrder(ctx *gin.Context) {
 	// ambil id yang ada di header
 	claims, _ := ctx.Get("Payload")
@@ -33,7 +46,7 @@ func (o *OrdersHandler) CreateOrder(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&newOrder); err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusBadRequest, models.Message{
-			Status: "falied",
+			Status: http.StatusBadRequest,
 			Msg: "invalid data sent",
 		})
 		return
@@ -44,44 +57,56 @@ func (o *OrdersHandler) CreateOrder(ctx *gin.Context) {
 	if errCreateOrder != nil {
 		log.Println("[ERROR] : ", errCreateOrder.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "internal server error",
 		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, models.Message{
-		Status: "ok",
+	ctx.JSON(http.StatusCreated, models.Message{
+		Status: http.StatusCreated,
 		Msg: "succes create order",
 	})
 }
 
-// Handler get order history user (fix)
+// Get Order user
+// @summary					Get order history
+// @router					/order [get]
+// @Description 			Get history order user 
+// @Tags        			Order
+// @Param 					Authorization header string true "Bearer Token"
+// @Accept					json
+// @produce					json
+// @Security    			BearerAuth
+// @failure					500 {object} models.MessageInternalServerError
+// @failure					404 {object} models.MessageNotFound
+// @failure					409 {object} models.MessageConflict
+// @success					200 {object} models.MessageResult
 func (o *OrdersHandler) GetOrderHistory(ctx *gin.Context) {
-
+	
 	// mengambil data berdasarkan user yang login 
 	claims, _ := ctx.Get("Payload")
 	userClaims := claims.(*pkg.Claims)
 	idInt := userClaims.Id
-
+	
 	// menjalankan fungsi repository get order history
 	result, err := o.ordersRepo.GetOrderHistory(ctx.Request.Context(), idInt)
-
+	
 	// error handling jika gagal menjalankan query
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "server error",
 		})
 		return
 	}
-
+	
 	// mengecek jika order 0, maka tampilkan error movie not found
 	if len(result) < 1 {
 		log.Println("[ERROR] : ", errors.New("orders not found"))
 		ctx.JSON(http.StatusNotFound, models.Message{
-			Status: "failed",
+			Status: http.StatusNotFound,
 			Msg: "orders not found",
 		})
 		return
@@ -89,13 +114,27 @@ func (o *OrdersHandler) GetOrderHistory(ctx *gin.Context) {
 
 	// jika berhasil mengambil data dari server dan ada datanya, maka tampilkan pesan ini
 	ctx.JSON(http.StatusOK, models.Message{
-		Status: "ok",
+		Status: http.StatusOK,
 		Msg: "success",
 		Result: result,
 	})
 }
 
-// Handler get order by order_id (fix)
+
+// Get Order History by id
+// @summary					Get order history
+// @router					/order/:orderId [get]
+// @Description 			Get history order user by id order  
+// @Tags        			Order
+// @Param        			orderId query string true "order id for get detail history order"
+// @Param 					Authorization header string true "Bearer Token"
+// @Accept					json
+// @produce					json
+// @Security    			BearerAuth
+// @failure					500 {object} models.MessageInternalServerError 
+// @failure					404 {object} models.MessageNotFound
+// @failure					409 {object} models.MessageConflict
+// @success					200 {object} models.MessageResult
 func (o *OrdersHandler) GetOrderById(ctx *gin.Context) {
 
 	// mengambil data berdasarkan user yang login 
@@ -109,7 +148,7 @@ func (o *OrdersHandler) GetOrderById(ctx *gin.Context) {
 	if !ok {
 		log.Println("[ERROR] : ", errors.New("params not found"))
 		ctx.JSON(http.StatusBadRequest, models.Message{
-			Status: "error",
+			Status: http.StatusBadRequest,
 			Msg: "Param id is needed",
 		})
 		return
@@ -121,7 +160,7 @@ func (o *OrdersHandler) GetOrderById(ctx *gin.Context) {
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "error",
+			Status: http.StatusInternalServerError,
 			Msg: "an error occurred on the server",
 		})
 		return
@@ -132,7 +171,7 @@ func (o *OrdersHandler) GetOrderById(ctx *gin.Context) {
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "server error",
 		})
 		return
@@ -142,7 +181,7 @@ func (o *OrdersHandler) GetOrderById(ctx *gin.Context) {
 	if len(result) < 1 {
 		log.Println("[ERROR] : ", errors.New("orders not found"))
 		ctx.JSON(http.StatusNotFound, models.Message{
-			Status: "failed",
+			Status: http.StatusNotFound,
 			Msg: "orders not found",
 		})
 		return
@@ -150,7 +189,7 @@ func (o *OrdersHandler) GetOrderById(ctx *gin.Context) {
 
 	// jika berhasil mengambil data dari server dan ada datanya, maka tampilkan pesan ini
 	ctx.JSON(http.StatusOK, models.Message{
-		Status: "ok",
+		Status: http.StatusOK,
 		Msg: "success",
 		Result: result,
 	})

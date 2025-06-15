@@ -16,7 +16,7 @@ func (m *Middleware) AcceessGate(allowedRole ...string) func(*gin.Context) {
 		claims, exist := ctx.Get("Payload")
 		if !exist {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, models.Message{
-				Status: "failed",
+				Status: http.StatusUnauthorized,
 				Msg: "silahkan login terlebih dahulu",
 			})
 			return
@@ -26,7 +26,7 @@ func (m *Middleware) AcceessGate(allowedRole ...string) func(*gin.Context) {
 		userClaims, ok := claims.(*pkg.Claims)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, models.Message{
-				Status: "failed",
+				Status: http.StatusUnauthorized,
 				Msg: "identitas login anda rusak, silahkan login kembali",
 			})
 			return
@@ -36,7 +36,7 @@ func (m *Middleware) AcceessGate(allowedRole ...string) func(*gin.Context) {
 		// cek role yang ada di claims
 		if !slices.Contains(allowedRole, userClaims.Role) {
 			ctx.AbortWithStatusJSON(http.StatusForbidden, models.Message{
-				Status: "failed",
+				Status: http.StatusForbidden,
 				Msg: "Anda tidak dapat mengakses sumber ini",
 			})
 			return
@@ -50,7 +50,7 @@ func (m *Middleware) AcceessGateAdmin(ctx *gin.Context) {
 	claims, exist := ctx.Get("Payload")
 	if !exist {
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, models.Message{
-			Status: "failed",
+			Status: http.StatusUnauthorized,
 			Msg: "silahkan login terlebih dahulu",
 		})
 		return
@@ -60,7 +60,7 @@ func (m *Middleware) AcceessGateAdmin(ctx *gin.Context) {
 	userClaims, ok := claims.(*pkg.Claims)
 	if !ok {
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, models.Message{
-			Status: "failed",
+			Status: http.StatusUnauthorized,
 			Msg: "identitas login anda rusak, silahkan login kembali",
 		})
 		return
@@ -69,7 +69,7 @@ func (m *Middleware) AcceessGateAdmin(ctx *gin.Context) {
 	// cek role yang ada di claims
 	if userClaims.Role != "admin" {
 		ctx.AbortWithStatusJSON(http.StatusForbidden, models.Message{
-			Status: "failed",
+			Status: http.StatusUnauthorized,
 			Msg: "Anda tidak dapat mengakses sumber ini",
 		})
 		return

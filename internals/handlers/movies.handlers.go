@@ -24,7 +24,20 @@ func NewMovieshandler(moviesRepo *repositories.MoviesRepository) *Movieshandler 
 	return &Movieshandler{moviesRepo: moviesRepo}
 }
 
-// Handler add movie (fix)
+// Add Movie
+// @summary					Add movie
+// @router					/movies [post]
+// @Description 			Add data movie 
+// @Tags        			Admin
+// @Param        			requestBody body models.RequestMoviesStr true "Input data for add movie"
+// @Param 					Authorization header string true "Bearer Token"
+// @accept					multipart/form-data
+// @produce					json
+// @Security    			BearerAuth
+// @failure					500 {object} models.MessageInternalServerError
+// @failure					400 {object} models.MessageBadRequest
+// @Failure     			401 {object} models.MessageUnauthorized
+// @success					201 {object} models.MessageCreated
 func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 	// siapkan variable movie struct
 	var newDataMovie models.MoviesStruct
@@ -33,14 +46,14 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 	if err := ctx.ShouldBind(&newDataMovie); err != nil {
 		log.Println("[ERROR]", err.Error())
 		if strings.Contains(err.Error(), "Field validation") {
-			ctx.JSON(http.StatusInternalServerError, models.Message{
-				Status: "failed",
+			ctx.JSON(http.StatusBadRequest, models.Message{
+				Status: http.StatusBadRequest,
 				Msg: "Ada content yang harus diisi",
 			})
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+		ctx.JSON(http.StatusBadRequest, models.Message{
+			Status: http.StatusBadRequest,
 			Msg: "terjadi kesalahan serverr",
 		})
 		return
@@ -68,7 +81,7 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 	if file == nil {
 		log.Println("[ERROR] : ", errors.New("file movie not found"))
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "your file is empty",
 		})
 		return
@@ -83,7 +96,7 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 	if err := ctx.SaveUploadedFile(file, filepath); err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "terjadi kesalahan upload",
 		})
 		return
@@ -96,7 +109,7 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "error",
+			Status: http.StatusInternalServerError,
 			Msg: "an error occurred on the server",
 		})
 		return
@@ -104,12 +117,26 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 
 	// tampilkan pesan success jika data berhasil ditambahkan
 	ctx.JSON(http.StatusCreated, models.Message{
-		Status: "ok",
+		Status: http.StatusCreated,
 		Msg: "successfully add data movie",
 	})
 }
 
-// Handler update movie (fix)
+// Update Movie
+// @summary					Update movie
+// @router					/movies/:id [put]
+// @Description 			Update movie by id movie
+// @Tags        			Admin
+// @Param        			requestBody body models.RequestMoviesStr true "Input data for update movie"
+// @Param        			movieId query string true "query movie id"
+// @Param 					Authorization header string true "Bearer Token"
+// @accept					multipart/form-data
+// @produce					json
+// @Security    			BearerAuth
+// @failure					500 {object} models.MessageInternalServerError
+// @failure					400 {object} models.MessageBadRequest
+// @Failure     			401 {object} models.MessageUnauthorized
+// @success					200 {object} models.MessageOK
 func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 
 	// mengambil id dari params
@@ -119,7 +146,7 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 	if !ok {
 		log.Println("[ERROR] : ", errors.New("params not found"))
 		ctx.JSON(http.StatusBadRequest, models.Message{
-			Status: "error",
+			Status: http.StatusBadRequest,
 			Msg: "Param id is needed",
 		})
 		return
@@ -131,8 +158,8 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 	// handling error jika gagal mengkonversi id
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
-		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "error",
+		ctx.JSON(http.StatusBadRequest, models.Message{
+			Status: http.StatusBadRequest,
 			Msg: "an error occurred on the server",
 		})
 		return
@@ -146,13 +173,13 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 		log.Println("[ERROR]", err.Error())
 		if strings.Contains(err.Error(), "Field validation") {
 			ctx.JSON(http.StatusInternalServerError, models.Message{
-				Status: "failed",
+				Status: http.StatusInternalServerError,
 				Msg: "Ada content yang harus diisi",
 			})
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "terjadi kesalahan serverr",
 		})
 		return
@@ -172,7 +199,7 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 	if file == nil {
 		log.Println("ERROR", errors.New("file movie not found"))
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "your file is empty",
 		})
 		return
@@ -187,7 +214,7 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 	if err := ctx.SaveUploadedFile(file, filepath); err != nil {
 		log.Println("[ERROR]", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "terjadi kesalahan upload",
 		})
 		return
@@ -200,7 +227,7 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 	if err != nil {
 		log.Println("[ERROR] :", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "error",
+			Status: http.StatusInternalServerError,
 			Msg: "an error occurred on the server",
 		})
 		return
@@ -213,12 +240,26 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 
 	// menampilkan response dari server, jika request dari client berhasil
 	ctx.JSON(http.StatusOK, models.Message{
-		Status: "ok",
+		Status: http.StatusOK,
 		Msg: "data successfully changed",
 	})
 }
 
-// handler delete movie (fix)
+// Delete Movie
+// @summary					Delete movie
+// @router					/movies/:id [delete]
+// @Description 			Delete movie by id movie
+// @Tags        			Admin
+// @Param        			movieId query string true "query movie id"
+// @Param 					Authorization header string true "Bearer Token"
+// @accept					json
+// @produce					json
+// @Security    			BearerAuth
+// @failure					500 {object} models.MessageInternalServerError
+// @failure					400 {object} models.MessageBadRequest
+// @failure					404 {object} models.MessageNotFound
+// @Failure     			401 {object} models.MessageUnauthorized
+// @success					200 {object} models.MessageOK
 func (m *Movieshandler) DeleteMovie(ctx *gin.Context) {
 	// mendapatkan id dari params
 	idStr, ok := ctx.Params.Get("id")
@@ -227,7 +268,7 @@ func (m *Movieshandler) DeleteMovie(ctx *gin.Context) {
 	if !ok {
 		log.Println("[ERROR] : ", errors.New("params not found"))
 		ctx.JSON(http.StatusBadRequest, models.Message{
-			Status: "error",
+			Status: http.StatusBadRequest,
 			Msg: "Param id is needed",
 		})
 		return
@@ -240,7 +281,7 @@ func (m *Movieshandler) DeleteMovie(ctx *gin.Context) {
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "error",
+			Status: http.StatusInternalServerError,
 			Msg: "an error occurred on the server",
 		})
 		return
@@ -253,7 +294,7 @@ func (m *Movieshandler) DeleteMovie(ctx *gin.Context) {
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "error",
+			Status: http.StatusInternalServerError,
 			Msg: "an error occurred on the server",
 		})
 		return
@@ -263,19 +304,28 @@ func (m *Movieshandler) DeleteMovie(ctx *gin.Context) {
 	if cmd.RowsAffected() == 0 {
 		log.Println("[ERROR] : ", errors.New("movie not found"))
 		ctx.JSON(http.StatusNotFound, models.Message{
-			Status: "failed",
+			Status: http.StatusNotFound,
 			Msg: "Movie not found",
 		})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, models.Message{
-		Status: "ok",
+		Status: http.StatusOK,
 		Msg: "data successfully deleted",
 	})
 }
 
-// handler get movie upcoming  (fix)
+// Get Movies Upcoming
+// @summary					Get movies upcoming
+// @router					/movies/moviesupcoming [get]
+// @Description 			Get movies upcoming
+// @Tags        			Movies
+// @accept					json
+// @produce					json
+// @failure					500 {object} models.MessageInternalServerError
+// @failure					404 {object} models.MessageNotFound
+// @success					200 {object} models.MessageResult
 func (m *Movieshandler) GetMoviesUpcoming(ctx *gin.Context) {
 
 	// menjalankan fungsi repository get movie upcoming
@@ -285,7 +335,7 @@ func (m *Movieshandler) GetMoviesUpcoming(ctx *gin.Context) {
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "ok",
+			Status: http.StatusInternalServerError,
 			Msg: "an error occurred on the server",
 		})
 		return
@@ -295,26 +345,35 @@ func (m *Movieshandler) GetMoviesUpcoming(ctx *gin.Context) {
 	if len(result) < 1 {
 		log.Println("[ERROR] : ", errors.New("movie not found"))
 		ctx.JSON(http.StatusNotFound, models.Message{
-			Status: "ok",
+			Status: http.StatusNotFound,
 			Msg: "movie not found",
 		})
 	}
 
 	// tampilkan hasil jika berhasil menerima request dari server
 	ctx.JSON(http.StatusOK, models.Message{
-		Status: "ok",
+		Status: http.StatusOK,
 		Msg: "success",
 		Result: result,
 	})
 }
 
-// handler get movie popular
+// Get Movies Popular
+// @summary					Get movies popular
+// @router					/movies/moviespopular [get]
+// @Description 			Get movies popular
+// @Tags        			Movies
+// @accept					json
+// @produce					json
+// @failure					500 {object} models.MessageInternalServerError
+// @failure					404 {object} models.MessageNotFound
+// @success					200 {object} models.MessageResult
 func (m *Movieshandler) GetMoviesPopular(ctx *gin.Context) {
 	result, err := m.moviesRepo.GetMoviePopular(ctx.Request.Context())
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "server error",
+			Status: http.StatusInternalServerError,
 			Msg: "an error occurred on the server",
 		})
 		return
@@ -323,20 +382,31 @@ func (m *Movieshandler) GetMoviesPopular(ctx *gin.Context) {
 	if len(result) < 1 {
 		log.Println("[ERROR] : ", errors.New("movie not found"))
 		ctx.JSON(http.StatusNotFound, models.Message{
-			Status: "not found",
+			Status: http.StatusNotFound,
 			Msg: "movie not found",
 		})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, models.Message{
-		Status: "ok",
+		Status: http.StatusOK,
 		Msg: "Success",
 		Result: result,
 	})
 }
 
-// handler get detail movie (fix)
+// Get Detail Movies 
+// @summary					Get detail movies
+// @router					/movies/:id [get]
+// @Description 			Get detail movies 
+// @Tags        			Movies
+// @Param       			id query string true "id movie for get detail movie"
+// @accept					json
+// @produce					json
+// @failure					500 {object} models.MessageInternalServerError
+// @failure					400 {object} models.MessageBadRequest
+// @failure					404 {object} models.MessageNotFound
+// @success					200 {object} models.MessageResult
 func (m *Movieshandler) GetDetailMovie(ctx *gin.Context) {
 	// ambil id param
 	idStr, ok := ctx.Params.Get("id")
@@ -344,7 +414,7 @@ func (m *Movieshandler) GetDetailMovie(ctx *gin.Context) {
 	// handling error jika param tidak ada
 	if !ok {
 		ctx.JSON(http.StatusBadRequest, models.Message{
-			Status: "error",
+			Status: http.StatusBadRequest,
 			Msg: "Param id is needed",
 		})
 		return
@@ -354,9 +424,9 @@ func (m *Movieshandler) GetDetailMovie(ctx *gin.Context) {
 	idInt, err := strconv.Atoi(idStr)
 
 	if err != nil {
-		log.Println("[BEDUG] : ", err)
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "error",
+			Status: http.StatusInternalServerError,
 			Msg: "an error occurred on the server",
 		})
 		return
@@ -365,9 +435,9 @@ func (m *Movieshandler) GetDetailMovie(ctx *gin.Context) {
 	// jalankan fungsi repository untuk get detail movie
 	result, err := m.moviesRepo.GetDetailMovie(ctx.Request.Context(), models.MoviesStruct{}, idInt)
 	if err != nil {
-		log.Println("Get Movie error:", err)
+		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "error",
+			Status: http.StatusInternalServerError,
 			Msg: "an error occurred on the server",
 		})
 		return
@@ -375,8 +445,9 @@ func (m *Movieshandler) GetDetailMovie(ctx *gin.Context) {
 
 	// mengecek jika request kosong
 	if len(result) == 0 {
+		log.Println("[ERROR] : ", errors.New("movie not found"))
 		ctx.JSON(http.StatusNotFound, models.Message{
-			Status: "not found",
+			Status: http.StatusNotFound,
 			Msg: "movie not found",
 		})
 		return
@@ -384,13 +455,26 @@ func (m *Movieshandler) GetDetailMovie(ctx *gin.Context) {
 
 	// menampilkan hasil response server jika request client berhasil 
 	ctx.JSON(http.StatusOK, models.Message{
-		Status: "ok",
+		Status: http.StatusOK,
 		Msg: "success",
 		Result: result,
 	})
 }
 
-// handler get movie with pagination (fix)
+// ListMovies returns a list of movies based on filters
+// @Summary     			List movies
+// @Router      			/movies [get]
+// @Description 			Get movies with optional filters: page, genre, title
+// @Tags        			Movies
+// @Accept      			json
+// @Produce     			json
+// @Param       			page   query int     false "Page number for pagination"
+// @Param       			genre  query string  false "Filter by genre"
+// @Param       			title  query string  false "Filter by movie title"
+// @Failure     			500 {object} models.MessageInternalServerError
+// @Failure     			400 {object} models.MessageBadRequest
+// @failure					404 {object} models.MessageNotFound
+// @Success     			200 {object} models.MessageResult
 func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 	pageQ := ctx.Query("page")
 	if pageQ == "" {
@@ -398,7 +482,7 @@ func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 		if err != nil {
 			log.Println("[ERROR] : ", err.Error())
 			ctx.JSON(http.StatusInternalServerError, models.Message{
-				Status: "failed",
+				Status: http.StatusInternalServerError,
 				Msg: "an error occurred on the server",
 			})
 			return
@@ -407,14 +491,14 @@ func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 		if len(result) < 1 {
 			log.Println("[ERROR] : ", errors.New("movie not found"))
 			ctx.JSON(http.StatusNotFound, models.Message{
-				Status: "not found",
+				Status: http.StatusNotFound,
 				Msg: "movie not found",
 			})
 			return
 		}
 
 		ctx.JSON(http.StatusOK, models.Message{
-			Status: "ok",
+			Status: http.StatusOK,
 			Msg: "success",
 			Result: result,
 		})
@@ -426,7 +510,7 @@ func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "ok",
+			Status: http.StatusInternalServerError,
 			Msg: "an error occurred on the server",
 		})
 		return
@@ -442,16 +526,12 @@ func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 	titleQ := ctx.Query("title")
 	genreQ := ctx.Query("genre")
 
-	log.Println("[TITLE] : ", titleQ)
-	log.Println("[GENRE] : ", genreQ)
-
-
 	result, err := m.moviesRepo.GetMoviesWithPagination(ctx.Request.Context(), models.MoviesStruct{}, offset, titleQ, genreQ)
 
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "an error occurred on the server",
 		})
 		return
@@ -460,14 +540,14 @@ func (m *Movieshandler) GetMoviesWithPagination(ctx *gin.Context) {
 	if len(result) < 1 {
 		log.Println("[ERROR] : ", errors.New("movie not found"))
 		ctx.JSON(http.StatusNotFound, models.Message{
-			Status: "not found",
+			Status: http.StatusNotFound,
 			Msg: "movie not found",
 		})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, models.Message{
-		Status: "ok",
+		Status: http.StatusOK,
 		Msg: "success",
 		Result: result,
 	})

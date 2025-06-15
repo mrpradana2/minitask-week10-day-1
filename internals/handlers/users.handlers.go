@@ -27,13 +27,15 @@ func NewUsersHandlers(usersRepo *repositories.UserRepository) *UsersHandler {
 // Register
 // @summary					Register user
 // @router					/users/signup [post]
+// @Description 			Register with email and password for access application 
+// @Tags        			Users
 // @Param        			login body models.UserLogin true "Input email and password"
 // @accept					json
 // @produce					json
-// @failure					500 {object} models.Message
-// @failure					400 {object} models.Message
-// @failure					409 {object} models.Message
-// @success					201 {object} models.Message
+// @failure					500 {object} models.MessageInternalServerError
+// @failure					400 {object} models.MessageBadRequest
+// @failure					409 {object} models.MessageConflict
+// @success					201 {object} models.MessageCreated
 func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 	// deklarasi body dari input user
 	newDataUser := models.UsersStruct{}
@@ -46,7 +48,7 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 		// error jika format email salah
 		if strings.Contains(err.Error(), "Error:Field validation for 'Email'") {
 			ctx.JSON(http.StatusBadRequest, models.Message{
-				Status: "failed",
+				Status: http.StatusBadRequest,
 				Msg: "incorrect email format",
 			})
 			return
@@ -55,7 +57,7 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 		// error jika panjang karakter password kurang dari 8 karakter
 		if strings.Contains(err.Error(), "Error:Field validation for 'Password'") {
 			ctx.JSON(http.StatusBadRequest, models.Message{
-				Status: "failed",
+				Status: http.StatusBadRequest,
 				Msg: "password length must be at least 8 characters",
 			})
 			return
@@ -63,7 +65,7 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 
 		// error yang lainnya
 		ctx.JSON(http.StatusBadRequest, models.Message{
-			Status: "failed",
+			Status: http.StatusBadRequest,
 			Msg: "invalid data sent",
 		})
 		return
@@ -78,7 +80,7 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "hash failed",
 		})
 		return
@@ -94,7 +96,7 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusConflict, models.Message{
-			Status: "failed",
+			Status: http.StatusConflict,
 			Msg: "user already registered",
 		})
 		return
@@ -109,7 +111,7 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 
 	// return jika server berhasil memberikan response
 	ctx.JSON(http.StatusCreated, models.Message{
-		Status: "success",
+		Status: http.StatusCreated,
 		Msg: "successfully create an account",
 	})
 }
@@ -118,13 +120,15 @@ func (u *UsersHandler) UserRegister(ctx *gin.Context) {
 // Login
 // @summary					Login user
 // @router					/users/login [post]
+// @Description 			Request data login email and password to authentication login
+// @Tags        			Users
 // @Param        			login body models.UserLogin true "Input email and password"
 // @accept					json
 // @produce					json
-// @failure					500 {object} models.Message
-// @failure					400 {object} models.Message
-// @failure					401 {object} models.Message
-// @success					200 {object} models.Message
+// @failure					500 {object} models.MessageInternalServerError
+// @failure					400 {object} models.MessageBadRequest
+// @failure					401 {object} models.MessageUnauthorized
+// @success					200 {object} models.MessageLogin
 func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 	// mengambil body dari json / input user
 	auth := models.UsersStruct{}
@@ -137,7 +141,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 		// error jika format email salah
 		if strings.Contains(err.Error(), "Error:Field validation for 'Email'") {
 			ctx.JSON(http.StatusBadRequest, models.Message{
-				Status: "failed",
+				Status: http.StatusBadRequest,
 				Msg: "incorrect email format",
 			})
 			return
@@ -146,7 +150,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 		// error jika panjang karakter password kurang dari 8 karakter
 		if strings.Contains(err.Error(), "Error:Field validation for 'Password'") {
 			ctx.JSON(http.StatusBadRequest, models.Message{
-				Status: "failed",
+				Status: http.StatusBadRequest,
 				Msg: "password length must be at least 8 characters",
 			})
 			return
@@ -155,7 +159,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 		// error yang lainnya
 		log.Println("[ERROR] : ", err)
 		ctx.JSON(http.StatusBadRequest, models.Message{
-			Status: "failed",
+			Status: http.StatusBadRequest,
 			Msg: "invalid data sent",
 		})
 		return
@@ -167,7 +171,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusUnauthorized, models.Message{
-			Status: "failed",
+			Status: http.StatusUnauthorized,
 			Msg: "incorrect email or password",
 		})
 		return
@@ -180,7 +184,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 	if err != nil {
 		log.Println("[ERROR] : ",err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "an error occurred on the server",
 		})
 		return
@@ -190,7 +194,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 	if !valid {
 		log.Println("[ERROR] : ", errors.New("incorrect email or password"))
 		ctx.JSON(http.StatusUnauthorized, models.Message{
-			Status: "failed",
+			Status: http.StatusUnauthorized,
 			Msg: "incorrect email or password",
 		})
 		return
@@ -205,7 +209,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "an error occurred on the server",
 		})
 		return
@@ -213,7 +217,7 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 
 	// pesan jika user berhasil login
 	ctx.JSON(http.StatusOK, models.Message{
-		Status: "success",
+		Status: http.StatusOK,
 		Msg: "login success",
 		Token: token,
 		Result: profile,
@@ -221,14 +225,19 @@ func (u *UsersHandler) UserLogin(ctx *gin.Context) {
 }
 
 
-// Get Profile
-// @summary					Get profile
-// @router					/users [get]
-// @header					token header string "TOKEN USER LOGIN"
-// @accept					json
-// @produce					json
-// @failure					404 {object} models.Message
-// @success					200 {object} models.Message
+// GetProfile handles the request to fetch user profile
+// @Summary     			Get profile
+// @Description 			Get data profile user
+// @Router      			/users [get]
+// @Tags        			Users
+// @Param 					Authorization header string true "Bearer Token"
+// @Accept      			json
+// @Produce     			json
+// @Security    			BearerAuth
+// @Failure     			500 {object} models.MessageInternalServerError
+// @Failure     			404 {object} models.MessageNotFound
+// @Failure     			401 {object} models.MessageUnauthorized
+// @Success     			200 {object} models.MessageResult
 func (u *UsersHandler) GetProfileById(ctx *gin.Context) {
 	// ambil data user yang login
 	claims, _ := ctx.Get("Payload")
@@ -241,7 +250,7 @@ func (u *UsersHandler) GetProfileById(ctx *gin.Context) {
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusNotFound, models.Message{
-			Status: "failed",
+			Status: http.StatusNotFound,
 			Msg: "user not found",
 		})
 		return
@@ -249,54 +258,35 @@ func (u *UsersHandler) GetProfileById(ctx *gin.Context) {
 
 	// pesan json jika berhasil mendapatkan profile user
 	ctx.JSON(http.StatusOK, models.Message{
-		Status: "success",
+		Status: http.StatusOK,
 		Msg: "success get profile",
 		Result: result,
 	})
 }
 
-// handler update profile (fix)
+// Update Profile
+// @summary					Update profile
+// @router					/users [patch]
+// @Description 			Upload a new data profile for the user
+// @Tags        			Users
+// @Param        			requestBody body models.RequestProfileStruct true "Update profile request"
+// @Param 					Authorization header string true "Bearer Token"
+// @accept					json
+// @produce					json
+// @Security    			BearerAuth
+// @failure					500 {object} models.MessageInternalServerError
+// @failure					400 {object} models.MessageBadRequest
+// @failure					401 {object} models.MessageUnauthorized
+// @failure					404 {object} models.MessageNotFound
+// @success					200 {object} models.MessageOK
 func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
-	// sediakan variabel untuk menapung input dari form
-	// formBody := models.ProfileStruct{}
-	// if err := ctx.ShouldBindJSON(&formBody); err != nil {
-	// 	log.Println(err.Error())
-	// 	// error yang lainnya
-	// 	log.Println("Binding error:", err)
-	// 	ctx.JSON(http.StatusBadRequest, models.Message{
-	// 		Status: "failed",
-	// 		Msg: "invalid data sent",
-	// 	})
-	// 	return
-	// }
 
-
-	// error jika data yang diinput tidak sesuai
-	// if err := ctx.ShouldBindJSON(&formBody); err != nil {
-	// 	log.Println(err.Error())
-	// 	ctx.JSON(http.StatusInternalServerError, models.Message{
-	// 		Status: "failed",
-	// 		Msg: "terjadi kesalahan server",
-	// 	})
-	// 	return
-	// }
-
-	// ambil nilai dari forn yang dikirim user
-	// firstName := formBody.First_name
-	// lastName := formBody.Last_name
-	// phoneNumber := formBody.Phone_number
-	// title := formBody.Title
-	// newPassword := formBody.NewPassword
-	// confirmPassword := formBody.ConfirmPassword
-
-	// log.Println("pass", formBody.ConfirmPassword) 
-	// log.Println("psss", formBody.NewPassword)
 	updateProfile := models.ProfileStruct{}
 
 	if err := ctx.ShouldBindJSON(&updateProfile); err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "invalid data sent",
 		})
 		return
@@ -314,7 +304,7 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 	if newPassword != confirmPassword {
 		log.Println("[ERROR] : ", errors.New("password are not the same"))
 		ctx.JSON(http.StatusBadRequest, models.Message{
-			Status: "failed",
+			Status: http.StatusBadRequest,
 			Msg: "password are not the same",
 		})
 		return
@@ -329,7 +319,7 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "hash failed",
 		})
 		return
@@ -349,7 +339,7 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "an error occurred on the server",
 		})
 		return
@@ -359,7 +349,7 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 	if cmd.RowsAffected() == 0 {
 		log.Println("[ERROR] : ", errors.New("query failed, did not change the data in the database"))
 		ctx.JSON(http.StatusNotFound, models.Message{
-			Status: "failed",
+			Status: http.StatusNotFound,
 			Msg: "no updated data",
 		})
 		return
@@ -367,11 +357,26 @@ func (u *UsersHandler) UpdateProfile(ctx *gin.Context) {
 
 	// menampilkan hasil jika berhasil mengupdate profile
 	ctx.JSON(http.StatusOK, models.Message{
-		Status: "success",
+		Status: http.StatusOK,
 		Msg: "update success",
 	})
 }
 
+// Update Photo Profile
+// @summary					Update photo profile
+// @router					/users/photoProfile [patch]
+// @Description 			Upload a new profile photo for the user
+// @Tags        			Users
+// @Param        			requestBody body models.RequestPhotoProfileStruct true "Update photo profile request"
+// @Param 					Authorization header string true "Bearer Token"
+// @accept					multipart/form-data
+// @produce					json
+// @Security    			BearerAuth
+// @failure					500 {object} models.MessageInternalServerError
+// @failure					400 {object} models.MessageBadRequest
+// @failure					401 {object} models.MessageUnauthorized
+// @failure					404 {object} models.MessageNotFound
+// @success					200 {object} models.MessageOK
 func (u *UsersHandler) UpdatePhotoProfile(ctx *gin.Context) {
 	// sediakan variabel untuk menapung input dari form
 	var formBody models.PhotoProfileStruct
@@ -380,7 +385,7 @@ func (u *UsersHandler) UpdatePhotoProfile(ctx *gin.Context) {
 	if err := ctx.ShouldBind(&formBody); err != nil {
 		log.Println("[ERROR] : ", err.Error()) 
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "terjadi kesalahan server",
 		})
 		return
@@ -392,8 +397,8 @@ func (u *UsersHandler) UpdatePhotoProfile(ctx *gin.Context) {
 	// error = jika file tidak diupload user
 	if file == nil {
 		log.Println("[ERROR] : ", errors.New("file not found"))
-		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+		ctx.JSON(http.StatusBadRequest, models.Message{
+			Status: http.StatusBadRequest,
 			Msg: "your file is empty",
 		})
 		return
@@ -419,7 +424,7 @@ func (u *UsersHandler) UpdatePhotoProfile(ctx *gin.Context) {
 	if err := ctx.SaveUploadedFile(file, filepath); err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "terjadi kesalahan upload",
 		})
 		return
@@ -432,7 +437,7 @@ func (u *UsersHandler) UpdatePhotoProfile(ctx *gin.Context) {
 	if err != nil {
 		log.Println("[ERROR] : ", err.Error())
 		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusInternalServerError,
 			Msg: "an error occurred on the server",
 		})
 		return
@@ -442,7 +447,7 @@ func (u *UsersHandler) UpdatePhotoProfile(ctx *gin.Context) {
 	if cmd.RowsAffected() == 0 {
 		log.Println("[ERROR] : ", errors.New("query failed, did not change the data in the database"))
 		ctx.JSON(http.StatusNotFound, models.Message{
-			Status: "failed",
+			Status: http.StatusNotFound,
 			Msg: "no updated data",
 		})
 		return
@@ -450,7 +455,7 @@ func (u *UsersHandler) UpdatePhotoProfile(ctx *gin.Context) {
 
 	// menampilkan hasil jika berhasil mengupdate profile
 	ctx.JSON(http.StatusOK, models.Message{
-		Status: "success",
+		Status: http.StatusOK,
 		Msg: "update success",
 	})
 }

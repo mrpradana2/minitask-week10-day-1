@@ -22,7 +22,7 @@ func (u *Middleware) VerifyToken(ctx *gin.Context) {
 	// cek jika bearerToken kosong
 	if bearerToken == "" {
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, models.Message{
-			Status: "failed",
+			Status: http.StatusUnauthorized,
 			Msg:    "silahkan login terlebih dahuluu",
 		})
 		return
@@ -31,7 +31,7 @@ func (u *Middleware) VerifyToken(ctx *gin.Context) {
 	// verifikasi bearer token
 	if !strings.Contains(bearerToken, "Bearer") {
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, models.Message{
-			Status: "failed",
+			Status: http.StatusUnauthorized,
 			Msg: "silahkan login terlebih dahulu",
 		})
 		return
@@ -42,7 +42,7 @@ func (u *Middleware) VerifyToken(ctx *gin.Context) {
 
 	if token == "" {
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, models.Message{
-			Status: "failed",
+			Status: http.StatusUnauthorized,
 			Msg:    "silahkan login terlebih dahulu",
 		})
 		return
@@ -55,7 +55,7 @@ func (u *Middleware) VerifyToken(ctx *gin.Context) {
 		// if err.Error() == "expired token" || err.Error() == "token has invalid claims: token is expired" {
 		if strings.Contains(err.Error(), "expired") {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, models.Message{
-				Status: "failed",
+				Status: http.StatusUnauthorized,
 				Msg:    "sesi anda berakhir, silahkan login kembali",
 			})
 			return
@@ -63,14 +63,14 @@ func (u *Middleware) VerifyToken(ctx *gin.Context) {
 		// format salah
 		if strings.Contains(err.Error(), "malformed") {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, models.Message{
-				Status: "failed",
+				Status: http.StatusUnauthorized,
 				Msg:    "identitas login anda rusak, silahkan login kembali",
 			})
 			return
 		}
 
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, models.Message{
-			Status: "failed",
+			Status: http.StatusUnauthorized,
 			Msg:    "terjadi kesalahan server",
 		})
 		return

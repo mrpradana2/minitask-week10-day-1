@@ -1,13 +1,180 @@
 basePath: /
 definitions:
-  models.Message:
+  models.MessageBadRequest:
+    properties:
+      message:
+        type: string
+      status:
+        example: 400
+        type: integer
+    type: object
+  models.MessageConflict:
+    properties:
+      message:
+        type: string
+      status:
+        example: 409
+        type: integer
+    type: object
+  models.MessageCreated:
+    properties:
+      message:
+        type: string
+      status:
+        example: 201
+        type: integer
+    type: object
+  models.MessageInternalServerError:
+    properties:
+      message:
+        type: string
+      status:
+        example: 500
+        type: integer
+    type: object
+  models.MessageLogin:
+    properties:
+      message:
+        type: string
+      status:
+        example: 200
+        type: integer
+      token:
+        type: string
+    type: object
+  models.MessageNotFound:
+    properties:
+      message:
+        type: string
+      status:
+        example: 404
+        type: integer
+    type: object
+  models.MessageOK:
+    properties:
+      message:
+        type: string
+      status:
+        example: 200
+        type: integer
+    type: object
+  models.MessageResult:
     properties:
       message:
         type: string
       result: {}
       status:
+        example: 200
+        type: integer
+    type: object
+  models.MessageUnauthorized:
+    properties:
+      message:
         type: string
-      token:
+      status:
+        example: 401
+        type: integer
+    type: object
+  models.RequestMoviesStr:
+    properties:
+      casts:
+        items:
+          type: string
+        type: array
+      cinema_ids:
+        items:
+          type: integer
+        type: array
+      director_name:
+        type: string
+      duration:
+        type: integer
+      genres:
+        items:
+          type: string
+        type: array
+      image_path:
+        type: string
+      location:
+        type: string
+      overview:
+        type: string
+      price:
+        type: integer
+      release_date:
+        type: string
+      time:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+    required:
+    - casts
+    - director_name
+    - duration
+    - genres
+    - image_path
+    - overview
+    - release_date
+    - title
+    type: object
+  models.RequestOrdersStruct:
+    properties:
+      date:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      paid:
+        type: boolean
+      payment_methode_id:
+        type: integer
+      phone_number:
+        type: string
+      schedule_id:
+        type: integer
+      seats:
+        items:
+          type: string
+        type: array
+      time:
+        type: string
+      total_price:
+        type: integer
+    required:
+    - date
+    - email
+    - full_name
+    - paid
+    - payment_methode_id
+    - phone_number
+    - schedule_id
+    - seats
+    - time
+    - total_price
+    type: object
+  models.RequestPhotoProfileStruct:
+    properties:
+      photo:
+        type: string
+    type: object
+  models.RequestProfileStruct:
+    properties:
+      confirm_password:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      new_password:
+        type: string
+      phone_number:
+        type: string
+      title:
         type: string
     type: object
   models.UserLogin:
@@ -28,26 +195,597 @@ info:
   title: Tickizt App API
   version: "1.0"
 paths:
-  /users/login:
-    post:
+  /movies:
+    get:
       consumes:
       - application/json
+      description: 'Get movies with optional filters: page, genre, title'
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - description: Filter by genre
+        in: query
+        name: genre
+        type: string
+      - description: Filter by movie title
+        in: query
+        name: title
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Message'
+            $ref: '#/definitions/models.MessageResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.MessageBadRequest'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.Message'
+            $ref: '#/definitions/models.MessageNotFound'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.MessageInternalServerError'
+      summary: List movies
+      tags:
+      - Movies
+    post:
+      consumes:
+      - multipart/form-data
+      description: Add data movie
+      parameters:
+      - description: Input data for add movie
+        in: body
+        name: requestBody
+        required: true
+        schema:
+          $ref: '#/definitions/models.RequestMoviesStr'
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.MessageCreated'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.MessageBadRequest'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.MessageUnauthorized'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.MessageInternalServerError'
+      security:
+      - BearerAuth: []
+      summary: Add movie
+      tags:
+      - Admin
+  /movies/:id:
+    delete:
+      consumes:
+      - application/json
+      description: Delete movie by id movie
+      parameters:
+      - description: query movie id
+        in: query
+        name: movieId
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageOK'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.MessageBadRequest'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.MessageUnauthorized'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.MessageNotFound'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.MessageInternalServerError'
+      security:
+      - BearerAuth: []
+      summary: Delete movie
+      tags:
+      - Admin
+    get:
+      consumes:
+      - application/json
+      description: Get detail movies
+      parameters:
+      - description: id movie for get detail movie
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.MessageBadRequest'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.MessageNotFound'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.MessageInternalServerError'
+      summary: Get detail movies
+      tags:
+      - Movies
+    put:
+      consumes:
+      - multipart/form-data
+      description: Update movie by id movie
+      parameters:
+      - description: Input data for update movie
+        in: body
+        name: requestBody
+        required: true
+        schema:
+          $ref: '#/definitions/models.RequestMoviesStr'
+      - description: query movie id
+        in: query
+        name: movieId
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageOK'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.MessageBadRequest'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.MessageUnauthorized'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.MessageInternalServerError'
+      security:
+      - BearerAuth: []
+      summary: Update movie
+      tags:
+      - Admin
+  /movies/moviespopular:
+    get:
+      consumes:
+      - application/json
+      description: Get movies popular
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.MessageNotFound'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.MessageInternalServerError'
+      summary: Get movies popular
+      tags:
+      - Movies
+  /movies/moviesupcoming:
+    get:
+      consumes:
+      - application/json
+      description: Get movies upcoming
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.MessageNotFound'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.MessageInternalServerError'
+      summary: Get movies upcoming
+      tags:
+      - Movies
+  /order:
+    get:
+      consumes:
+      - application/json
+      description: Get history order user
+      parameters:
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.MessageNotFound'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.MessageConflict'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.MessageInternalServerError'
+      security:
+      - BearerAuth: []
+      summary: Get order history
+      tags:
+      - Order
+    post:
+      consumes:
+      - application/json
+      description: Create order seat movie
+      parameters:
+      - description: Input data for create order
+        in: body
+        name: requestBody
+        required: true
+        schema:
+          $ref: '#/definitions/models.RequestOrdersStruct'
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.MessageCreated'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.MessageBadRequest'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.MessageConflict'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.MessageInternalServerError'
+      security:
+      - BearerAuth: []
+      summary: Create order movie
+      tags:
+      - Order
+  /order/:orderId:
+    get:
+      consumes:
+      - application/json
+      description: Get history order user by id order
+      parameters:
+      - description: order id for get detail history order
+        in: query
+        name: orderId
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.MessageNotFound'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.MessageConflict'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.MessageInternalServerError'
+      security:
+      - BearerAuth: []
+      summary: Get order history
+      tags:
+      - Order
+  /schedule/:movieId:
+    get:
+      consumes:
+      - application/json
+      description: Get schedule movie by movie id
+      parameters:
+      - description: get schedule by movie id
+        in: query
+        name: movieId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.MessageBadRequest'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.MessageNotFound'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.MessageInternalServerError'
+      summary: Get Schedule movie
+      tags:
+      - Schedule
+  /seats/:scheduleId:
+    get:
+      consumes:
+      - application/json
+      description: get available seat by schedule id
+      parameters:
+      - description: schedule id to get available seat
+        in: query
+        name: scheduleId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.MessageBadRequest'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.MessageNotFound'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.MessageInternalServerError'
+      summary: Get available seat
+      tags:
+      - Seats
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: Get data profile user
+      parameters:
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResult'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.MessageUnauthorized'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.MessageNotFound'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.MessageInternalServerError'
+      security:
+      - BearerAuth: []
+      summary: Get profile
+      tags:
+      - Users
+    patch:
+      consumes:
+      - application/json
+      description: Upload a new data profile for the user
+      parameters:
+      - description: Update profile request
+        in: body
+        name: requestBody
+        required: true
+        schema:
+          $ref: '#/definitions/models.RequestProfileStruct'
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageOK'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.MessageBadRequest'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.MessageUnauthorized'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.MessageNotFound'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.MessageInternalServerError'
+      security:
+      - BearerAuth: []
+      summary: Update profile
+      tags:
+      - Users
+  /users/login:
+    post:
+      consumes:
+      - application/json
+      description: Request data login email and password to authentication login
+      parameters:
+      - description: Input email and password
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserLogin'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageLogin'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.MessageBadRequest'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.MessageUnauthorized'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.MessageInternalServerError'
       summary: Login user
+      tags:
+      - Users
+  /users/photoProfile:
+    patch:
+      consumes:
+      - multipart/form-data
+      description: Upload a new profile photo for the user
+      parameters:
+      - description: Update photo profile request
+        in: body
+        name: requestBody
+        required: true
+        schema:
+          $ref: '#/definitions/models.RequestPhotoProfileStruct'
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageOK'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.MessageBadRequest'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.MessageUnauthorized'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.MessageNotFound'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.MessageInternalServerError'
+      security:
+      - BearerAuth: []
+      summary: Update photo profile
+      tags:
+      - Users
   /users/signup:
     post:
       consumes:
       - application/json
+      description: Register with email and password for access application
       parameters:
       - description: Input email and password
         in: body
@@ -61,18 +799,25 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/models.Message'
+            $ref: '#/definitions/models.MessageCreated'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.Message'
+            $ref: '#/definitions/models.MessageBadRequest'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/models.Message'
+            $ref: '#/definitions/models.MessageConflict'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.Message'
+            $ref: '#/definitions/models.MessageInternalServerError'
       summary: Register user
+      tags:
+      - Users
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
