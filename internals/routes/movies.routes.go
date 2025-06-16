@@ -16,10 +16,10 @@ func InitRouterMovies(router *gin.Engine, moviesRepo *repositories.MoviesReposit
 	routerMovies.POST("", middleware.VerifyToken, middleware.AcceessGate("admin", "user"), moviesHandler.AddMovie)
 
 	// Router update movie
-	routerMovies.PUT("/:id", middleware.VerifyToken, middleware.AcceessGate("admin"), moviesHandler.UpdateMovie)
+	routerMovies.PUT("/:id", middleware.VerifyToken, middleware.AcceessGate("admin", "user"), moviesHandler.UpdateMovie)
 
 	// Router delete movie
-	routerMovies.DELETE("/:id",  middleware.VerifyToken, middleware.AcceessGate("admin"), moviesHandler.DeleteMovie)
+	routerMovies.DELETE("/:id",  middleware.VerifyToken, middleware.AcceessGate("admin", "user"), moviesHandler.DeleteMovie)
 
 	// router get movie upcoming
 	routerMovies.GET("/moviesupcoming", moviesHandler.GetMoviesUpcoming)

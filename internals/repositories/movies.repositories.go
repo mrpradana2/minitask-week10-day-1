@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"strings"
 	"tikcitz-app/internals/models"
 	"tikcitz-app/internals/utils"
 	"time"
@@ -57,9 +58,11 @@ func (u *MoviesRepository) AddMovie(ctx context.Context, title, filePath, overvi
 
 	defer tx.Rollback(ctx)
 
+	cleanPath := strings.TrimPrefix(filePath, `public\`)
+
 	// menambahakan data movie baru dengan mereturn kan id movie yang baru dibuat
 	query := "INSERT INTO movies (title, image_path, overview, release_date, director_name, duration) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
-	values := []any{title, filePath, overview, releaseDate, directorName, duration}
+	values := []any{title, cleanPath, overview, releaseDate, directorName, duration}
 	var movieId int
 	err := tx.QueryRow(ctx, query, values...).Scan(&movieId)
 	if err != nil {

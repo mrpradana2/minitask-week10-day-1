@@ -127,7 +127,7 @@ func (m *Movieshandler) AddMovie(ctx *gin.Context)  {
 // @router					/movies/:id [put]
 // @Description 			Update movie by id movie
 // @Tags        			Admin
-// @Param        			requestBody body models.RequestMoviesStr true "Input data for update movie"
+// @Param        			requestBody body models.RequestUpdateMoviesStr true "Input data for update movie"
 // @Param        			movieId query string true "query movie id"
 // @Param 					Authorization header string true "Bearer Token"
 // @accept					multipart/form-data
@@ -166,7 +166,7 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 	}
 
 	// siapkan variable movie struct
-	var newDataMovie models.MoviesStruct
+	var newDataMovie models.UpdateMoviesStruct
 
 	// lakukan binding data jika ada data yang tidak sesuai dengan format, maka akan terjadi error
 	if err := ctx.ShouldBind(&newDataMovie); err != nil {
@@ -187,6 +187,7 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 
 	// ambil masing masing new data dari form
 	file := newDataMovie.Image_path
+	oldImagePath := newDataMovie.Old_Image_path
 	title := newDataMovie.Title
 	overview := newDataMovie.Overview
 	releaseDate := newDataMovie.Release_date
@@ -194,34 +195,34 @@ func (m *Movieshandler) UpdateMovie(ctx *gin.Context) {
 	duration := newDataMovie.Duration
 	genres := newDataMovie.Genres
 	casts := newDataMovie.Casts
-	log.Println("hello", genres)
+	fileImagePathUpdate := ""
 	// jika file bernilai nil maka tampilkan error
 	if file == nil {
-		log.Println("ERROR", errors.New("file movie not found"))
-		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: http.StatusInternalServerError,
-			Msg: "your file is empty",
-		})
-		return
+		fileImagePathUpdate = oldImagePath
 	}
 
+	if file != nil {
 	// ambil id yang ada di header
 	claims, _ := ctx.Get("Payload")
 	userClaims := claims.(*pkg.Claims)
 	ext := fp.Ext(file.Filename)
 	filename := fmt.Sprintf("%d_%d_movie_image%s", time.Now().UnixNano(), userClaims.Id, ext)
 	filepath := fp.Join("public", "img", "thumbnail", filename)
+	cleanPath := strings.TrimPrefix(filepath, `public\`)
 	if err := ctx.SaveUploadedFile(file, filepath); err != nil {
-		log.Println("[ERROR]", err.Error())
-		ctx.JSON(http.StatusInternalServerError, models.Message{
-			Status: http.StatusInternalServerError,
-			Msg: "terjadi kesalahan upload",
-		})
-		return
+			log.Println("[ERROR]", err.Error())
+			ctx.JSON(http.StatusInternalServerError, models.Message{
+				Status: http.StatusInternalServerError,
+				Msg: "terjadi kesalahan upload",
+			})
+			return
+		}
+	fileImagePathUpdate = cleanPath
 	}
+	
 
 	// menjalankan fungsi repository update movie
-	cmd, err := m.moviesRepo.UpdateMovie(ctx.Request.Context(), title, filepath, overview, directorName, releaseDate, duration, genres, casts, idInt)
+	cmd, err := m.moviesRepo.UpdateMovie(ctx.Request.Context(), title, fileImagePathUpdate, overview, directorName, releaseDate, duration, genres, casts, idInt)
 
 	// melakukan handling error jika query gagal
 	if err != nil {
